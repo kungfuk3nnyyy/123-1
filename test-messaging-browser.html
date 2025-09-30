@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Messaging System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { margin: 10px 5px; padding: 10px 15px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Event Talents Platform - Messaging System Test</h1>
+    
+    <div class="test-section info">
+        <h3>🔐 Authentication Test</h3>
+        <button onclick="testLogin('organizer')">Login as Organizer</button>
+        <button onclick="testLogin('talent')">Login as Talent</button>
+        <div id="auth-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>📡 Real-time Connection Test</h3>
+        <button onclick="testWebSocketConnection()">Test WebSocket/SSE</button>
+        <button onclick="disconnectWebSocket()">Disconnect</button>
+        <div id="websocket-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>📨 Messages API Test</h3>
+        <button onclick="testMessagesAPI()">Test GET Messages</button>
+        <button onclick="sendTestMessage()">Send Test Message</button>
+        <div id="messages-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>📄 Live Test Results</h3>
+        <div id="live-results"></div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let currentUser = null;
+        
+        const credentials = {
+            organizer: { email: 'contact@eventpro.ke', password: 'password123' },
+            talent: { email: 'sarah.photographer@example.com', password: 'password123' }
+        };
+
+        function log(message, type = 'info') {
+            const div = document.getElementById('live-results');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff';
+            div.innerHTML += `<div style="color: ${color}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            div.scrollTop = div.scrollInnerHeight;
+        }
+
+        async function testLogin(userType) {
+            const resultDiv = document.getElementById('auth-result');
+            const creds = credentials[userType];
+            
+            try {
+                log(`🔐 Attempting login as ${userType}: ${creds.email}`);
+                
+                // Use Next-Auth sign in
+                const response = await fetch('/api/auth/signin/credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(creds)
+                });
+                
+                log(`Login response status: ${response.status}`);
+                
+                // Check if we can access a protected route
+                const testResponse = await fetch(`/api/${userType}/messages`);
+                log(`Protected route test: ${testResponse.status}`);
+                
+                if (testResponse.status === 200) {
+                    currentUser = userType;
+                    resultDiv.innerHTML = `<div class="success">✅ Successfully logged in as ${userType}</div>`;
+                    log(`✅ Login successful for ${userType}`);
+                } else if (testResponse.status === 401) {
+                    resultDiv.innerHTML = `<div class="error">❌ Authentication failed for ${userType}</div>`;
+                    log(`❌ Authentication failed for ${userType}`);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Unexpected response: ${testResponse.status}</div>`;
+                    log(`❌ Unexpected response: ${testResponse.status}`);
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Login error: ${error.message}</div>`;
+                log(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        function testWebSocketConnection() {
+            const resultDiv = document.getElementById('websocket-result');
+            
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="error">❌ Please login first</div>';
+                return;
+            }
+            
+            try {
+                log('📡 Testing WebSocket/SSE connection...');
+                
+                eventSource = new EventSource('/api/websocket');
+                
+                eventSource.onopen = () => {
+                    resultDiv.innerHTML = '<div class="success">✅ WebSocket/SSE connected</div>';
+                    log('✅ WebSocket/SSE connected successfully', 'success');
+                };
+                
+                eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    log(`📨 Received: ${data.type} - ${data.message || JSON.stringify(data.data)}`);
+                };
+                
+                eventSource.onerror = (error) => {
+                    resultDiv.innerHTML = '<div class="error">❌ WebSocket/SSE connection failed</div>';
+                    log('❌ WebSocket/SSE connection error', 'error');
+                };
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Connection error: ${error.message}</div>`;
+                log(`❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                document.getElementById('websocket-result').innerHTML = '<div class="info">🔌 Disconnected</div>';
+                log('🔌 WebSocket/SSE disconnected');
+            }
+        }
+
+        async function testMessagesAPI() {
+            const resultDiv = document.getElementById('messages-result');
+            
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="error">❌ Please login first</div>';
+                return;
+            }
+            
+            try {
+                log(`📨 Testing messages API for ${currentUser}...`);
+                
+                const response = await fetch(`/api/${currentUser}/messages`);
+                const data = await response.text();
+                
+                if (response.status === 200) {
+                    const jsonData = JSON.parse(data);
+                    resultDiv.innerHTML = `<div class="success">✅ Messages API working</div><pre>${JSON.stringify(jsonData, null, 2)}</pre>`;
+                    log(`✅ Messages API returned ${response.status}`, 'success');
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ API Error: ${response.status}</div><pre>${data}</pre>`;
+                    log(`❌ Messages API error: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ API call failed: ${error.message}</div>`;
+                log(`❌ API call failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendTestMessage() {
+            if (!currentUser) {
+                log('❌ Please login first', 'error');
+                return;
+            }
+            
+            try {
+                log(`📤 Sending test message as ${currentUser}...`);
+                
+                // Get booking and user IDs from API first
+                const messagesResponse = await fetch(`/api/${currentUser}/messages`);
+                if (!messagesResponse.ok) {
+                    throw new Error('Cannot fetch existing messages');
+                }
+                
+                const messagesData = await messagesResponse.json();
+                log(`Messages data: ${JSON.stringify(messagesData)}`);
+                
+                // For now, just log that we would send a message
+                log('💬 Test message sending functionality ready');
+                
+            } catch (error) {
+                log(`❌ Send message error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-start logging
+        log('🚀 Messaging System Test Interface Ready');
+        log('📝 Step 1: Login as either Organizer or Talent');
+        log('📝 Step 2: Test WebSocket/SSE connection');
+        log('📝 Step 3: Test Messages API');
+    </script>
+</body>
+</html>

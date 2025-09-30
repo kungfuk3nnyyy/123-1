@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login Test</title>
+</head>
+<body>
+    <h1>Admin Dashboard Test</h1>
+    <button onclick="testLogin()">Test Admin Login</button>
+    <div id="result"></div>
+
+    <script>
+    async function testLogin() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing login...';
+
+        try {
+            // First, get the CSRF token
+            const csrfResponse = await fetch('/api/auth/csrf');
+            const { csrfToken } = await csrfResponse.json();
+            
+            // Then attempt login
+            const loginResponse = await fetch('/api/auth/callback/credentials', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    email: 'john@doe.com',
+                    password: 'johndoe123',
+                    csrfToken: csrfToken,
+                    callbackUrl: '/admin',
+                    redirect: 'false'
+                })
+            });
+
+            const loginResult = await loginResponse.json();
+            console.log('Login result:', loginResult);
+
+            if (loginResult.url && loginResult.url.includes('/admin')) {
+                result.innerHTML = '✅ Login successful! Redirecting to admin dashboard...';
+                window.location.href = '/admin';
+            } else {
+                result.innerHTML = '❌ Login failed. Check console for details.';
+            }
+
+        } catch (error) {
+            console.error('Login error:', error);
+            result.innerHTML = '❌ Login error: ' + error.message;
+        }
+    }
+
+    // Test admin API endpoints 
+    async function testAdminAPIs() {
+        const endpoints = [
+            '/api/dashboard/admin',
+            '/api/admin/users', 
+            '/api/admin/bookings',
+            '/api/admin/packages',
+            '/api/admin/health'
+        ];
+
+        console.log('Testing admin API endpoints...');
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fetch(endpoint);
+                console.log(`${endpoint}: ${response.status} ${response.statusText}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`${endpoint} data:`, data);
+                }
+            } catch (error) {
+                console.error(`${endpoint}: ERROR -`, error);
+            }
+        }
+    }
+
+    // Add test buttons
+    window.onload = function() {
+        document.body.innerHTML += '<br><button onclick="testAdminAPIs()">Test Admin APIs</button>';
+        document.body.innerHTML += '<br><button onclick="window.open(\'/admin\', \'_blank\')">Open Admin Dashboard</button>';
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,870 @@
+
+import { PrismaClient, UserRole, BookingStatus, TransactionType, TransactionStatus } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  console.log('🌱 Starting database seeding...')
+
+  // Clear existing data
+  await prisma.review.deleteMany()
+  await prisma.transaction.deleteMany()
+  await prisma.message.deleteMany()
+  await prisma.booking.deleteMany()
+  await prisma.event.deleteMany()
+  await prisma.file.deleteMany()
+  await prisma.bankAccount.deleteMany()
+  await prisma.payout.deleteMany()
+  await prisma.talentProfile.deleteMany()
+  await prisma.organizerProfile.deleteMany()
+  await prisma.session.deleteMany()
+  await prisma.account.deleteMany()
+  await prisma.user.deleteMany()
+
+  console.log('🗑️  Cleared existing data')
+
+  // Hash passwords
+  const hashedPassword = await bcrypt.hash('johndoe123', 12)
+  const hashedTalentPassword = await bcrypt.hash('password123', 12)
+  const hashedOrganizerPassword = await bcrypt.hash('password123', 12)
+
+  console.log('🔐 Hashed passwords')
+
+  // Create test admin account (mandatory)
+  const adminUser = await prisma.user.create({
+    data: {
+      name: 'John Doe',
+      email: 'john@doe.com',
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true
+    }
+  })
+
+  console.log('👨‍💼 Created admin user')
+
+  // Create sample talents
+  const talent1 = await prisma.user.create({
+    data: {
+      name: 'Sarah Johnson',
+      email: 'sarah.photographer@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Professional wedding and event photographer with 8+ years experience. Specialized in capturing beautiful moments that last a lifetime.',
+          tagline: 'Capturing Your Perfect Moments',
+          location: 'Nairobi, Kenya',
+          website: 'https://sarahjohnsonphotography.com',
+          phoneNumber: '+254-701-234-567',
+          mpesaPhoneNumber: '254701234567',
+          mpesaVerified: true,
+          category: 'Photography',
+          skills: ['Wedding Photography', 'Event Photography', 'Portrait Photography', 'Photo Editing'],
+          experience: 'Over 8 years of professional photography experience, having covered 200+ weddings and corporate events.',
+          hourlyRate: 25000,
+          availability: 'Available weekends and evenings. Advance booking required.',
+          averageRating: 4.8,
+          totalReviews: 47,
+          totalBookings: 89
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  const talent2 = await prisma.user.create({
+    data: {
+      name: 'Michael Davis',
+      email: 'mike.dj@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Award-winning DJ and MC with expertise in weddings, corporate events, and private parties. I bring energy and professionalism to every event.',
+          tagline: 'Music That Moves You',
+          location: 'Mombasa, Kenya',
+          website: 'https://mikedavismusic.com',
+          phoneNumber: '+254-702-345-678',
+          mpesaPhoneNumber: '254702345678',
+          mpesaVerified: true,
+          category: 'DJ/Music',
+          skills: ['DJ Services', 'MC/Hosting', 'Sound System Setup', 'Music Curation'],
+          experience: '6 years of experience in the entertainment industry with 150+ successful events.',
+          hourlyRate: 15000,
+          availability: 'Available all week. Special packages for weekend events.',
+          averageRating: 4.6,
+          totalReviews: 32,
+          totalBookings: 67
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  const talent3 = await prisma.user.create({
+    data: {
+      name: 'Amanda Wilson',
+      email: 'amanda.decor@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      talentProfile: {
+        create: {
+          bio: 'Creative event decorator and planner specializing in luxury weddings and corporate events. I transform spaces into magical experiences.',
+          tagline: 'Creating Magical Experiences',
+          location: 'Kisumu, Kenya',
+          website: 'https://amandawilsondecorations.com',
+          phoneNumber: '+254-703-456-789',
+          mpesaPhoneNumber: '254703456789',
+          mpesaVerified: true,
+          category: 'Event Decoration',
+          skills: ['Event Decoration', 'Floral Arrangements', 'Lighting Design', 'Space Planning'],
+          experience: '5 years of creating stunning event decorations for high-end clients.',
+          hourlyRate: 30000,
+          availability: 'Available for bookings 2 weeks in advance.',
+          averageRating: 4.9,
+          totalReviews: 28,
+          totalBookings: 45
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  console.log('📸 Created talent users')
+
+  // Create sample organizers
+  const organizer1 = await prisma.user.create({
+    data: {
+      name: 'EventPro Kenya',
+      email: 'contact@eventpro.ke',
+      password: hashedOrganizerPassword,
+      role: UserRole.ORGANIZER,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      organizerProfile: {
+        create: {
+          companyName: 'EventPro Kenya Limited',
+          bio: 'Leading event management company in Kenya, specializing in corporate events, weddings, and large-scale celebrations.',
+          website: 'https://eventpro.ke',
+          phoneNumber: '+254-701-234-567',
+          location: 'Nairobi, Kenya',
+          eventTypes: ['Corporate Events', 'Weddings', 'Conferences', 'Product Launches'],
+          totalEvents: 125,
+          averageRating: 4.7
+        }
+      }
+    },
+    include: {
+      organizerProfile: true
+    }
+  })
+
+  const organizer2 = await prisma.user.create({
+    data: {
+      name: 'Sarah Wedding Events',
+      email: 'sarah@weddingdreams.com',
+      password: hashedOrganizerPassword,
+      role: UserRole.ORGANIZER,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      organizerProfile: {
+        create: {
+          companyName: 'Wedding Dreams by Sarah',
+          bio: 'Boutique wedding planning service creating personalized and memorable wedding experiences for couples.',
+          website: 'https://weddingdreams.com',
+          phoneNumber: '+254-702-345-678',
+          location: 'Mombasa, Kenya',
+          eventTypes: ['Weddings', 'Engagement Parties', 'Bridal Showers'],
+          totalEvents: 78,
+          averageRating: 4.9
+        }
+      }
+    },
+    include: {
+      organizerProfile: true
+    }
+  })
+
+  console.log('🎭 Created organizer users')
+
+  // Create sample events
+  const event1 = await prisma.event.create({
+    data: {
+      organizerId: organizer1.id,
+      title: 'Annual Tech Conference 2024',
+      description: 'Join us for the biggest tech conference in East Africa. We need professional photography coverage for the entire 2-day event including keynote speeches, panel discussions, and networking sessions.',
+      category: 'Corporate',
+      location: 'KICC, Nairobi',
+      eventDate: new Date('2024-03-15T09:00:00Z'),
+      duration: 16,
+      requirements: 'Professional DSLR camera, experience with corporate events, ability to work for long hours, knowledge of low-light photography.',
+      budget: 200000,
+      isPublic: true,
+      isActive: true
+    }
+  })
+
+  const event2 = await prisma.event.create({
+    data: {
+      organizerId: organizer2.id,
+      title: 'Sarah & John Wedding Celebration',
+      description: 'Beautiful outdoor wedding ceremony and reception. Looking for a talented photographer to capture our special day with natural, candid shots.',
+      category: 'Wedding',
+      location: 'Villa Rosa Kempinski, Nairobi',
+      eventDate: new Date('2024-02-18T14:00:00Z'),
+      duration: 8,
+      requirements: 'Wedding photography portfolio, own equipment, ability to direct group photos, experience with outdoor lighting.',
+      budget: 150000,
+      isPublic: true,
+      isActive: true
+    }
+  })
+
+  const event3 = await prisma.event.create({
+    data: {
+      organizerId: organizer1.id,
+      title: 'Corporate Product Launch',
+      description: 'Launching our new tech product. Need a DJ for background music and MC services for the event program.',
+      category: 'Corporate',
+      location: 'Radisson Blu Hotel, Nairobi',
+      eventDate: new Date('2024-02-25T18:00:00Z'),
+      duration: 4,
+      requirements: 'Professional sound system, corporate event experience, ability to MC formal events.',
+      budget: 80000,
+      isPublic: true,
+      isActive: true
+    }
+  })
+
+  console.log('📅 Created sample events')
+
+  // Create sample bookings
+  const booking1 = await prisma.booking.create({
+    data: {
+      eventId: event2.id,
+      organizerId: organizer2.id,
+      talentId: talent1.id,
+      status: BookingStatus.COMPLETED,
+      amount: 120000,
+      platformFee: 12000,
+      talentAmount: 108000,
+      isPaidOut: false,
+      proposedDate: new Date('2024-01-15T10:00:00Z'),
+      acceptedDate: new Date('2024-01-16T14:30:00Z'),
+      completedDate: new Date('2024-02-18T22:00:00Z'),
+      notes: 'Wedding photography coverage from ceremony to reception. Client very satisfied with results.'
+    }
+  })
+
+  const booking2 = await prisma.booking.create({
+    data: {
+      eventId: event3.id,
+      organizerId: organizer1.id,
+      talentId: talent2.id,
+      status: BookingStatus.ACCEPTED,
+      amount: 60000,
+      platformFee: 6000,
+      talentAmount: 54000,
+      proposedDate: new Date('2024-02-01T09:00:00Z'),
+      acceptedDate: new Date('2024-02-02T16:20:00Z'),
+      notes: 'DJ and MC services for product launch event.'
+    }
+  })
+
+  const booking3 = await prisma.booking.create({
+    data: {
+      eventId: event1.id,
+      organizerId: organizer1.id,
+      talentId: talent1.id,
+      status: BookingStatus.PENDING,
+      amount: 180000,
+      platformFee: 18000,
+      talentAmount: 162000,
+      proposedDate: new Date('2024-02-10T11:00:00Z'),
+      notes: 'Photography coverage for 2-day tech conference. Awaiting talent confirmation.'
+    }
+  })
+
+  // Add more completed bookings for payout testing
+  const booking4 = await prisma.booking.create({
+    data: {
+      eventId: event1.id,
+      organizerId: organizer1.id,
+      talentId: talent2.id,
+      status: BookingStatus.COMPLETED,
+      amount: 85000,
+      platformFee: 8500,
+      talentAmount: 76500,
+      isPaidOut: false,
+      proposedDate: new Date('2024-01-20T08:00:00Z'),
+      acceptedDate: new Date('2024-01-21T10:00:00Z'),
+      completedDate: new Date('2024-02-15T18:00:00Z'),
+      notes: 'DJ services for tech conference afterparty. Great performance!'
+    }
+  })
+
+  const booking5 = await prisma.booking.create({
+    data: {
+      eventId: event2.id,
+      organizerId: organizer2.id,
+      talentId: talent3.id,
+      status: BookingStatus.COMPLETED,
+      amount: 150000,
+      platformFee: 15000,
+      talentAmount: 135000,
+      isPaidOut: false,
+      proposedDate: new Date('2024-01-25T09:00:00Z'),
+      acceptedDate: new Date('2024-01-26T15:00:00Z'),
+      completedDate: new Date('2024-02-20T20:00:00Z'),
+      notes: 'Wedding decoration services. Venue looked absolutely magical!'
+    }
+  })
+
+  console.log('📋 Created sample bookings')
+
+  // Create sample transactions
+  const transaction1 = await prisma.transaction.create({
+    data: {
+      bookingId: booking1.id,
+      userId: organizer2.id,
+      type: TransactionType.BOOKING_PAYMENT,
+      status: TransactionStatus.COMPLETED,
+      amount: 120000,
+      currency: 'KES',
+      paystackRef: 'trx_' + Math.random().toString(36).substr(2, 9),
+      description: 'Payment for wedding photography services'
+    }
+  })
+
+  const transaction2 = await prisma.transaction.create({
+    data: {
+      bookingId: booking1.id,
+      userId: talent1.id,
+      type: TransactionType.TALENT_PAYOUT,
+      status: TransactionStatus.COMPLETED,
+      amount: 108000,
+      currency: 'KES',
+      description: 'Payout for completed wedding photography'
+    }
+  })
+
+  console.log('💳 Created sample transactions')
+
+  // Create sample reviews
+  const review1 = await prisma.review.create({
+    data: {
+      bookingId: booking1.id,
+      giverId: organizer2.id,
+      receiverId: talent1.id,
+      rating: 5,
+      comment: 'Sarah did an absolutely amazing job at our wedding! The photos are stunning and she captured every important moment perfectly. Her professionalism and creativity exceeded our expectations. Highly recommended!',
+      reviewerType: 'ORGANIZER'
+    }
+  })
+
+  const review2 = await prisma.review.create({
+    data: {
+      bookingId: booking1.id,
+      giverId: talent1.id,
+      receiverId: organizer2.id,
+      rating: 5,
+      comment: 'Sarah and her team were wonderful to work with. Very organized, clear communication, and the wedding was beautifully planned. Everything went smoothly and I had a great experience working with them.',
+      reviewerType: 'TALENT'
+    }
+  })
+
+  console.log('⭐ Created sample reviews')
+
+  // Create sample messages
+  const message1 = await prisma.message.create({
+    data: {
+      bookingId: booking2.id,
+      senderId: organizer1.id,
+      receiverId: talent2.id,
+      content: 'Hi Mike! We\'re excited to have you as our DJ for the product launch. Can you confirm what time you\'ll need for setup?',
+      isRead: true
+    }
+  })
+
+  const message2 = await prisma.message.create({
+    data: {
+      bookingId: booking2.id,
+      senderId: talent2.id,
+      receiverId: organizer1.id,
+      content: 'Hello! Thanks for booking me. I\'ll need about 2 hours for setup, so I can arrive at 4 PM for the 6 PM start. I\'ll bring my full professional sound system.',
+      isRead: true
+    }
+  })
+
+  const message3 = await prisma.message.create({
+    data: {
+      bookingId: booking3.id,
+      senderId: organizer1.id,
+      receiverId: talent1.id,
+      content: 'Hi Sarah! We saw your amazing work at the wedding event. Would you be available for our 2-day tech conference? We need comprehensive coverage of all sessions.',
+      isRead: false
+    }
+  })
+
+  console.log('💬 Created sample messages')
+
+  // Create bank account for talent
+  const bankAccount1 = await prisma.bankAccount.create({
+    data: {
+      talentId: talent1.talentProfile!.id,
+      accountName: 'Sarah Johnson',
+      accountNumber: '0123456789',
+      bankCode: '044',
+      bankName: 'Access Bank',
+      isVerified: true
+    }
+  })
+
+  console.log('🏪 Created sample bank accounts')
+
+  // Create sample payouts
+  const payout1 = await prisma.payout.create({
+    data: {
+      talentId: talent1.id,
+      amount: 108000,
+      status: 'COMPLETED',
+      processedAt: new Date('2024-02-19T10:30:00Z')
+    }
+  })
+
+  console.log('💰 Created sample payouts')
+
+  // Create additional diverse talents for comprehensive package showcase
+  const talent4 = await prisma.user.create({
+    data: {
+      name: 'James Kimani',
+      email: 'james.mc@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Professional MC and event host with expertise in corporate events, weddings, and cultural celebrations. Fluent in English, Swahili, and Kikuyu.',
+          tagline: 'Your Voice for Every Occasion',
+          location: 'Nairobi, Kenya',
+          website: 'https://jameskimanimc.com',
+          phoneNumber: '+254-704-567-890',
+          mpesaPhoneNumber: '254704567890',
+          mpesaVerified: true,
+          category: 'MC/Host',
+          skills: ['Master of Ceremonies', 'Public Speaking', 'Event Coordination', 'Multilingual Hosting'],
+          experience: '7 years of professional MC services for corporate and social events.',
+          hourlyRate: 12000,
+          availability: 'Available weekdays and weekends with advance booking.',
+          averageRating: 4.7,
+          totalReviews: 34,
+          totalBookings: 58
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  const talent5 = await prisma.user.create({
+    data: {
+      name: 'Grace Mwangi',
+      email: 'grace.catering@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Expert caterer specializing in authentic Kenyan cuisine and international dishes. Perfect for weddings, corporate events, and private parties.',
+          tagline: 'Delicious Memories, One Dish at a Time',
+          location: 'Kisumu, Kenya',
+          website: 'https://gracecatering.co.ke',
+          phoneNumber: '+254-705-678-901',
+          mpesaPhoneNumber: '254705678901',
+          mpesaVerified: true,
+          category: 'Catering',
+          skills: ['Kenyan Cuisine', 'International Dishes', 'Event Catering', 'Menu Planning'],
+          experience: '10 years of professional catering for events of all sizes.',
+          hourlyRate: 8000,
+          availability: 'Available with 1-week advance notice for menu planning.',
+          averageRating: 4.8,
+          totalReviews: 42,
+          totalBookings: 78
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  const talent6 = await prisma.user.create({
+    data: {
+      name: 'Daniel Ochieng',
+      email: 'daniel.musician@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Lead vocalist and guitarist for The Rift Valley Band. We perform contemporary, traditional, and gospel music for all types of events.',
+          tagline: 'Live Music That Moves Hearts',
+          location: 'Nakuru, Kenya',
+          website: 'https://riftvalleyband.com',
+          phoneNumber: '+254-706-789-012',
+          mpesaPhoneNumber: '254706789012',
+          mpesaVerified: true,
+          category: 'Live Entertainment',
+          skills: ['Live Music Performance', 'Guitar', 'Vocals', 'Band Leadership'],
+          experience: '12 years performing at weddings, corporate events, and festivals.',
+          hourlyRate: 20000,
+          availability: 'Available weekends and evenings. Band requires 2-week notice.',
+          averageRating: 4.9,
+          totalReviews: 28,
+          totalBookings: 45
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  const talent7 = await prisma.user.create({
+    data: {
+      name: 'Mary Wanjiku',
+      email: 'mary.culturaldance@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Director of Kikuyu Cultural Dancers troupe. We showcase authentic Kenyan traditional dances and cultural performances for events and celebrations.',
+          tagline: 'Preserving Culture Through Dance',
+          location: 'Kiambu, Kenya',
+          website: 'https://kikuyuculturaldancers.com',
+          phoneNumber: '+254-707-890-123',
+          mpesaPhoneNumber: '254707890123',
+          mpesaVerified: true,
+          category: 'Cultural Performance',
+          skills: ['Traditional Dance', 'Cultural Performance', 'Choreography', 'Event Entertainment'],
+          experience: '8 years leading cultural dance performances for corporate and cultural events.',
+          hourlyRate: 15000,
+          availability: 'Available for cultural events and celebrations with advance booking.',
+          averageRating: 4.8,
+          totalReviews: 21,
+          totalBookings: 36
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  const talent8 = await prisma.user.create({
+    data: {
+      name: 'Peter Ng\'ang\'a',
+      email: 'peter.corporatehost@example.com',
+      password: hashedTalentPassword,
+      role: UserRole.TALENT,
+      isActive: true,
+      emailVerified: new Date(),
+      isEmailVerified: true,
+      talentProfile: {
+        create: {
+          bio: 'Experienced corporate event host and presenter specializing in product launches, conferences, and business seminars. MBA in Business Administration.',
+          tagline: 'Professional Excellence in Corporate Hosting',
+          location: 'Mombasa, Kenya',
+          website: 'https://peternganga.com',
+          phoneNumber: '+254-708-901-234',
+          mpesaPhoneNumber: '254708901234',
+          mpesaVerified: true,
+          category: 'Corporate Host',
+          skills: ['Corporate Hosting', 'Business Presentations', 'Conference Moderation', 'Product Launches'],
+          experience: '9 years of corporate event hosting for Fortune 500 companies.',
+          hourlyRate: 18000,
+          availability: 'Available weekdays and selected weekends.',
+          averageRating: 4.6,
+          totalReviews: 31,
+          totalBookings: 52
+        }
+      }
+    },
+    include: {
+      talentProfile: true
+    }
+  })
+
+  console.log('🎭 Created additional diverse talents')
+
+  // Create comprehensive sample packages using the placeholder images
+  const packages = [
+    // DJ Services
+    {
+      talentId: talent2.talentProfile!.id,
+      title: 'Premium Wedding DJ Package',
+      description: 'Complete wedding entertainment solution including professional DJ services, MC hosting, and premium sound system. Perfect for creating unforgettable wedding celebrations with music that gets everyone dancing.',
+      category: 'DJ/Music',
+      location: 'Mombasa, Kenya',
+      price: 85000,
+      duration: '8 hours',
+      features: ['Professional DJ Equipment', 'MC Services', 'Wireless Microphones', 'Dance Floor Lighting', 'Music Requests', 'Ceremony Sound'],
+      coverImageUrl: 'https://audiolover.com/wp-content/uploads/2024/01/how-to-find-a-wedding-dj-1705796875.jpg',
+      images: ['https://i.pinimg.com/originals/49/dc/43/49dc43be36e67b747fa659e601a84e98.jpg
+    },
+    {
+      talentId: talent2.talentProfile!.id,
+      title: 'Corporate Event DJ & Sound',
+      description: 'Professional background music and sound system setup for corporate events, product launches, and business celebrations. Includes wireless microphone setup for presentations.',
+      category: 'DJ/Music',
+      location: 'Mombasa, Kenya',
+      price: 45000,
+      duration: '4 hours',
+      features: ['Background Music', 'Sound System Setup', 'Wireless Microphones', 'Technical Support', 'Professional Setup'],
+      coverImageUrl: 'https://audiolover.com/wp-content/uploads/2024/01/how-to-find-a-wedding-dj-1705796875.jpg',
+      images: ['https://i.pinimg.com/originals/0d/1f/72/0d1f72d6ad3432e37d3146bc32e61ac3.jpg
+    },
+
+    // Photography Services
+    {
+      talentId: talent1.talentProfile!.id,
+      title: 'Luxury Wedding Photography',
+      description: 'Comprehensive wedding photography coverage from getting ready to reception. Includes engagement session, full ceremony and reception coverage, and professionally edited high-resolution images.',
+      category: 'Photography',
+      location: 'Nairobi, Kenya',
+      price: 120000,
+      duration: 'Full Day',
+      features: ['Pre-wedding Consultation', 'Engagement Session', 'Full Wedding Coverage', '500+ Edited Photos', 'Online Gallery', 'Print Release'],
+      coverImageUrl: 'https://www.baptistehauville.com/wp-content/uploads/2019/12/photographer-elopement-masai-mara-kenya-bride-and-groom-Surrounded-by-Maasai-Warriors.jpg',
+      images: ['https://i.pinimg.com/originals/f4/04/a9/f404a9bbebec98a31c2e99ca6c7f36c7.jpg
+    },
+    {
+      talentId: talent1.talentProfile!.id,
+      title: 'Corporate Event Photography',
+      description: 'Professional documentation of corporate events, conferences, and business meetings. Perfect for marketing materials, annual reports, and social media content.',
+      category: 'Photography',
+      location: 'Nairobi, Kenya',
+      price: 65000,
+      duration: '6 hours',
+      features: ['Event Documentation', 'Candid & Posed Shots', 'High-Resolution Images', '48-Hour Delivery', 'Commercial License', 'Social Media Ready'],
+      coverImageUrl: 'https://clinetmedia.co.ke/wp-content/uploads/2014/09/cm84.jpg',
+      images: ['https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7bA4Y9UNIgrAy4z1dcqimnEYnzuBD_Ah8ZU47s4rDJGWQtNB5icK5QfMxOHx2Z7MdMrDOOWjAlOI9xhWtNLPIT2ErOXtpqo0zHUby2jBLURTI9BzRLLAdehgWSd0gFC-Q2Ynw_YCRiDU/s1600/Posed-vs-candid-photography-which-one-better-tianchad.com.jpg
+    },
+    {
+      talentId: talent1.talentProfile!.id,
+      title: 'Social Event Photography',
+      description: 'Capture memorable moments at birthday parties, anniversaries, graduations, and family celebrations. Professional quality photos to preserve your special memories.',
+      category: 'Photography',
+      location: 'Nairobi, Kenya',
+      price: 35000,
+      duration: '4 hours',
+      features: ['Event Coverage', 'Group Photos', 'Candid Moments', 'Basic Editing', 'Digital Gallery', 'Quick Turnaround'],
+      coverImageUrl: 'https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3584444867900872689',
+      images: ['https://i.pinimg.com/originals/fa/9a/71/fa9a71f8abc96731ad7725b3a7d8fcd3.jpg
+    },
+
+    // MC Services
+    {
+      talentId: talent4.talentProfile!.id,
+      title: 'Professional Wedding MC',
+      description: 'Experienced wedding MC to guide your special day from ceremony to reception. Bilingual services in English and Swahili, ensuring all guests feel included in your celebration.',
+      category: 'MC/Host',
+      location: 'Nairobi, Kenya',
+      price: 55000,
+      duration: '8 hours',
+      features: ['Ceremony & Reception MC', 'Bilingual Services', 'Timeline Management', 'Guest Interaction', 'Music Coordination', 'Emergency Backup'],
+      coverImageUrl: 'https://i.ytimg.com/vi/RV_9PSvZ2kk/maxresdefault.jpg',
+      images: ['https://i.pinimg.com/originals/fc/92/a1/fc92a1a8ac8529dfd77e2c1f51f02ce7.jpg
+    },
+    {
+      talentId: talent4.talentProfile!.id,
+      title: 'Corporate Event Host',
+      description: 'Professional hosting services for corporate events, conferences, and business functions. Skilled in managing formal programs and engaging diverse audiences.',
+      category: 'MC/Host',
+      location: 'Nairobi, Kenya',
+      price: 35000,
+      duration: '4 hours',
+      features: ['Professional Hosting', 'Program Management', 'Audience Engagement', 'Award Ceremonies', 'Panel Moderation', 'Keynote Introductions'],
+      coverImageUrl: 'https://i.ytimg.com/vi/fjh3lB6FyXk/maxresdefault.jpg',
+      images: ['https://images.template.net/257220/Event-Professional-Cover-Page-Template-edit-online.png
+    },
+
+    // Corporate Host
+    {
+      talentId: talent8.talentProfile!.id,
+      title: 'Executive Corporate Presenter',
+      description: 'High-level corporate event hosting for executive meetings, board presentations, and international conferences. MBA-qualified with Fortune 500 experience.',
+      category: 'Corporate Host',
+      location: 'Mombasa, Kenya',
+      price: 75000,
+      duration: '6 hours',
+      features: ['Executive Level Hosting', 'International Experience', 'Presentation Skills', 'Stakeholder Management', 'Crisis Management', 'Professional Attire'],
+      coverImageUrl: 'https://thumbs.dreamstime.com/b/business-woman-presentation-speaker-audience-seminar-workshop-training-portrait-presenter-speaking-to-278765876.jpg',
+      images: ['https://img.freepik.com/premium-photo/presentation-coaching-with-business-woman-talking-audience-workshop_146482-12362.jpg
+    },
+
+    // Catering Services
+    {
+      talentId: talent5.talentProfile!.id,
+      title: 'Authentic Kenyan Wedding Feast',
+      description: 'Traditional Kenyan wedding catering featuring nyama choma, ugali, sukuma wiki, and other local delicacies. Perfect for couples wanting to celebrate their heritage.',
+      category: 'Catering',
+      location: 'Kisumu, Kenya',
+      price: 150000,
+      duration: 'Full Service',
+      features: ['Traditional Kenyan Dishes', 'Nyama Choma Station', 'Vegetarian Options', 'Professional Service Staff', 'Setup & Cleanup', 'Cultural Menu'],
+      coverImageUrl: 'https://i.pinimg.com/736x/b6/c8/7a/b6c87a8ede3eefeb47d2f025af732b8b--african-recipes-kenya.jpg',
+      images: ['https://i.pinimg.com/originals/aa/e5/d3/aae5d3bb59b39c6482c111247e5b323f.jpg
+    },
+    {
+      talentId: talent5.talentProfile!.id,
+      title: 'Premium Buffet Catering',
+      description: 'Elegant buffet catering service for corporate events, parties, and celebrations. International and local cuisine options with professional presentation.',
+      category: 'Catering',
+      location: 'Kisumu, Kenya',
+      price: 80000,
+      duration: 'Event Duration',
+      features: ['International Cuisine', 'Buffet Setup', 'Serving Staff', 'Chafing Dishes', 'Table Linens', 'Cleanup Service'],
+      coverImageUrl: 'https://i.pinimg.com/originals/ca/f7/de/caf7ded40e76e04eb1ca106a1c5f1fcf.jpg',
+      images: ['https://i.pinimg.com/originals/38/0a/20/380a20c64e9f6368e4d478c644e983b9.jpg
+    },
+    {
+      talentId: talent5.talentProfile!.id,
+      title: 'Corporate Lunch Catering',
+      description: 'Professional catering service for business meetings, conferences, and corporate events. Healthy, delicious meals that keep your team energized.',
+      category: 'Catering',
+      location: 'Kisumu, Kenya',
+      price: 25000,
+      duration: 'Lunch Service',
+      features: ['Healthy Menu Options', 'On-time Delivery', 'Professional Presentation', 'Dietary Accommodations', 'Eco-friendly Packaging', 'Volume Discounts'],
+      coverImageUrl: 'https://bestcare.co.ke/wp-content/uploads/2017/12/outside-corporate-private-catering-services-nairobi-kenya-hire-hiring.png',
+      images: ['https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi3eCJyB5KZNm-L0Qo0g8t3mBDgztA7wQ0YNCSCpVfbtvs4tDVcSOc00bZWsiZI0icC3IEDxCInZ52cxJGMCRvwk9AyloBehQYkPeiDwSF3UFvDW4Vs1hrVhimQjRHdCeh-yxhX207a-uuaj-f4HFHeqqoz57kNiL0BIn80GggLqVDOnAo0BkelzLQg/w1600/1682939884019.jpg
+    },
+
+    // Event Decoration
+    {
+      talentId: talent3.talentProfile!.id,
+      title: 'Luxury Wedding Decoration',
+      description: 'Transform your wedding venue into a fairy tale setting with our luxury decoration package. Includes floral arrangements, lighting, and complete venue styling.',
+      category: 'Event Decoration',
+      location: 'Kisumu, Kenya',
+      price: 200000,
+      duration: '2 Days Setup',
+      features: ['Bridal Table Decor', 'Floral Arrangements', 'Ambient Lighting', 'Ceremony Arch', 'Reception Centerpieces', 'Cleanup Service'],
+      coverImageUrl: 'https://img.freepik.com/premium-photo/kenya-wedding-reception-ceremony-decoration-setup-hells-gate-national-park-naivasha-nakuru-city-coun_257688-4336.jpg?w=2000',
+      images: ['https://thumbs.dreamstime.com/z/rocks-kenyan-landscapes-nature-great-rift-valley-hell-s-gate-national-park-naivasha-nakuru-city-county-kenya-east-africa-african-287230926.jpg
+    },
+    {
+      talentId: talent3.talentProfile!.id,
+      title: 'Corporate Event Styling',
+      description: 'Professional event decoration for corporate functions, product launches, and business celebrations. Modern, elegant designs that reflect your brand.',
+      category: 'Event Decoration',
+      location: 'Kisumu, Kenya',
+      price: 95000,
+      duration: '1 Day Setup',
+      features: ['Brand Integration', 'Modern Styling', 'Professional Lighting', 'Stage Design', 'Registration Area', 'Photography Backdrop'],
+      coverImageUrl: 'https://reisenseo.com/blog/wp-content/uploads/2024/05/New-Project-Events-Planner-17.webp',
+      images: ['https://i.pinimg.com/originals/01/66/a7/0166a79b48324cf7e8a2da3e4d8235bf.jpg
+    },
+    {
+      talentId: talent3.talentProfile!.id,
+      title: 'Garden Party Decoration',
+      description: 'Beautiful outdoor event decoration perfect for garden parties, anniversaries, and intimate celebrations. Weather-resistant and Instagram-worthy setups.',
+      category: 'Event Decoration',
+      location: 'Kisumu, Kenya',
+      price: 65000,
+      duration: '1 Day',
+      features: ['Outdoor Suitable Decor', 'Weather Protection', 'Fairy Lights', 'Floral Displays', 'Seating Arrangements', 'Photo Opportunities'],
+      coverImageUrl: 'https://sawelalodges.com/images/detail-slider/wedding-venue-in-kenya18.jpg',
+      images: ['https://i.pinimg.com/originals/d7/12/18/d71218b698c333b481cdc019ad926521.jpg
+    },
+
+    // Live Entertainment
+    {
+      talentId: talent6.talentProfile!.id,
+      title: 'Live Band Wedding Performance',
+      description: 'The Rift Valley Band brings live music magic to your wedding celebration. Contemporary hits, traditional favorites, and romantic ballads for your special day.',
+      category: 'Live Entertainment',
+      location: 'Nakuru, Kenya',
+      price: 180000,
+      duration: '5 hours',
+      features: ['5-Piece Live Band', 'Sound Equipment', 'Diverse Repertoire', 'Special Requests', 'Professional Setup', 'Backup Equipment'],
+      coverImageUrl: 'https://i.ytimg.com/vi/U7k25zWDCos/maxresdefault.jpg',
+      images: ['https://i.pinimg.com/736x/90/b2/2c/90b22c9f0cb098dce0c9ac9496758a5f.jpg
+    },
+
+    // Cultural Performance
+    {
+      talentId: talent7.talentProfile!.id,
+      title: 'Traditional Kenyan Cultural Show',
+      description: 'Authentic Kikuyu cultural dance performance showcasing Kenya\'s rich heritage. Perfect for cultural events, corporate functions, and celebration entertainment.',
+      category: 'Cultural Performance',
+      location: 'Kiambu, Kenya',
+      price: 95000,
+      duration: '2 hours',
+      features: ['Traditional Costumes', 'Live Drumming', 'Cultural Narration', '6-Dancer Troupe', 'Audience Participation', 'Educational Component'],
+      coverImageUrl: 'https://i.ytimg.com/vi/_vE1DpfU-f8/maxresdefault.jpg',
+      images: ['https://images.pexels.com/photos/29004123/pexels-photo-29004123/free-photo-of-traditional-cultural-dance-performance-in-africa.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1
+    }
+  ]
+
+  // Create all packages
+  for (const packageData of packages) {
+    await prisma.package.create({
+      data: {
+        ...packageData,
+        price: packageData.price,
+        isPublished: true,
+        isActive: true,
+        viewCount: Math.floor(Math.random() * 200) + 50, // Random view count between 50-250
+        bookingCount: Math.floor(Math.random() * 20) + 1 // Random booking count between 1-20
+      }
+    })
+  }
+
+  console.log('📦 Created comprehensive sample packages')
+
+  console.log('✅ Database seeding completed successfully!')
+  console.log('📝 Test accounts created:')
+  console.log('   Admin: john@doe.com / johndoe123')
+  console.log('   Talent: sarah.photographer@example.com / password123')
+  console.log('   Organizer: contact@eventpro.ke / password123')
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Error during seeding:', e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

@@ -1,0 +1,101 @@
+
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.jest
+*.test.js
+*.test.ts
+__tests__
+tests
+
+# Development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Next.js
+.next/
+out/
+dist/
+
+# Logs
+logs
+*.log
+
+# Uploads (will be mounted as volume)
+uploads/
+
+# Cache
+.cache
+.parcel-cache
+
+# Documentation
+*.md
+docs/
+
+# Misc
+.nyc_output
+.coverage
+.eslintcache
+
+# Lock files (copied separately)
+package-lock.json*
+yarn.lock*
+pnpm-lock.yaml*
+
+# Build artifacts
+build/
+dist/
+
+# Prisma
+prisma/migrations/
+.env
+
+# Test files
+*.test.*
+test-*.js
+test-*.ts
+comprehensive-*.js
+debug-*.js
+check-*.js
+verify-*.js
+login_test.js
+quick-functionality-test.js
+
+*.html
+
+# Backup files
+*.bak
+*.backup
+
+# Additional test and debug files
+test_*.js
+test_*.html
+cookies.txt
+*.pdf

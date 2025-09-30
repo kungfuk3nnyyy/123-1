@@ -1,0 +1,801 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Merged Enums to remove duplicates
+enum TransactionType {
+  BOOKING_PAYMENT
+  BOOKING_REFUND
+  WITHDRAWAL
+  DEPOSIT
+  PLATFORM_FEE
+  TALENT_PAYOUT
+  REFUND
+  OTHER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum UserRole {
+  ADMIN
+  TALENT
+  ORGANIZER
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AdminApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum DisputeReason {
+  TALENT_NO_SHOW
+  SERVICE_NOT_AS_DESCRIBED
+  UNPROFESSIONAL_CONDUCT
+  ORGANIZER_UNRESPONSIVE
+  SCOPE_DISAGREEMENT
+  UNSAFE_ENVIRONMENT
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_ORGANIZER_FAVOR
+  RESOLVED_TALENT_FAVOR
+  RESOLVED_PARTIAL
+}
+
+enum NotificationType {
+  MESSAGE_RECEIVED
+  BOOKING_REQUEST
+  BOOKING_ACCEPTED
+  BOOKING_DECLINED
+  BOOKING_PAYMENT_CONFIRMED
+  PAYOUT_PROCESSED
+  REVIEW_RECEIVED
+  EVENT_REMINDER
+  BOOKING_COMPLETED
+  ADMIN_USER_REGISTRATION
+  DISPUTE_CREATED
+  DISPUTE_RESOLVED
+  DIRECT_MESSAGE
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReferralRewardStatus {
+  PENDING
+  CREDITED
+  FAILED
+}
+
+enum ReferralStatus {
+  PENDING
+  CONVERTED
+}
+
+enum ReviewerType {
+  ORGANIZER
+  TALENT
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum DocumentType {
+  ID_FRONT
+  ID_BACK
+  BUSINESS_CERT
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  BUSY
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminAuditLog {
+  id              String   @id @default(cuid())
+  adminId         String
+  adminEmail      String
+  targetUserId    String?
+  targetUserEmail String?
+  action          String
+  details         String?
+  ipAddress       String?
+  userAgent       String?
+  timestamp       DateTime @default(now())
+
+  @@index([action])
+  @@index([adminId])
+  @@index([targetUserId])
+  @@index([timestamp])
+}
+
+model BankAccount {
+  id            String        @id @default(cuid())
+  talentId      String        @unique
+  accountName   String
+  accountNumber String
+  bankCode      String
+  bankName      String
+  recipientCode String?       @unique
+  isVerified    Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  TalentProfile TalentProfile @relation(fields: [talentId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id                             String         @id @default(cuid())
+  eventId                        String
+  organizerId                    String
+  talentId                       String
+  status                         BookingStatus  @default(PENDING)
+  amount                         Decimal        @db.Decimal(10, 2)
+  platformFee                    Decimal        @db.Decimal(10, 2)
+  talentAmount                   Decimal        @db.Decimal(10, 2)
+  isPaidOut                      Boolean        @default(false)
+  proposedDate                   DateTime?
+  acceptedDate                   DateTime?
+  completedDate                  DateTime?
+  notes                          String?
+  eventEndDateTime               DateTime?
+  createdAt                      DateTime       @default(now())
+  updatedAt                      DateTime       @updatedAt
+  Event                          Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  User_Booking_organizerIdToUser User           @relation("Booking_organizerIdToUser", fields: [organizerId], references: [id])
+  User_Booking_talentIdToUser    User           @relation("Booking_talentIdToUser", fields: [talentId], references: [id])
+  Dispute                        Dispute[]
+  Message                        Message[]
+  Notification                   Notification[]
+  Payout                         Payout[]
+  Refund                         Refund[]
+  Review                         Review[]
+  Transaction                    Transaction[]
+
+  @@index([organizerId])
+  @@index([talentId])
+  @@index([status])
+  @@index([eventId])
+  @@index([status, createdAt])
+  @@index([talentId, status])
+  @@index([organizerId, status])
+  @@index([proposedDate])
+  @@index([acceptedDate])
+  @@index([completedDate])
+}
+
+model CaptchaSession {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  answer    String
+  imageData String
+  ipAddress String?
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([sessionId])
+}
+
+model Dispute {
+  id              String        @id @default(cuid())
+  bookingId       String
+  disputedById    String
+  reason          DisputeReason
+  explanation     String
+  status          DisputeStatus @default(OPEN)
+  resolvedById    String?
+  resolutionNotes String?
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+  payoutAmount    Decimal?      @db.Decimal(10, 2)
+  resolvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  Booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  User            User          @relation(fields: [disputedById], references: [id])
+  Refund          Refund[]
+}
+
+model Event {
+  id           String         @id @default(cuid())
+  organizerId  String
+  title        String
+  description  String
+  category     String[]
+  location     String
+  eventDate    DateTime
+  duration     Int?
+  requirements String?
+  budget       Decimal?       @db.Decimal(10, 2)
+  budgetMin    Decimal?       @db.Decimal(10, 2)
+  budgetMax    Decimal?       @db.Decimal(10, 2)
+  status       EventStatus    @default(DRAFT)
+  isPublic     Boolean        @default(true)
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Booking      Booking[]
+  Proposal     Proposal[]
+  User         User           @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  Notification Notification[]
+}
+
+model Proposal {
+  id             String         @id @default(cuid())
+  eventId        String
+  talentId       String
+  quoteAmountKes Decimal        @db.Decimal(10, 2)
+  message        String
+  status         ProposalStatus @default(PENDING)
+  acceptedAt     DateTime?
+  rejectedAt     DateTime?
+  withdrawnAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  Event          Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  Talent         User           @relation("ProposalTalent", fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, talentId])
+  @@index([eventId])
+  @@index([talentId])
+  @@index([status])
+}
+
+model File {
+  id            String         @id @default(cuid())
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  url           String
+  talentId      String?
+  messageId     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Message       Message?       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  TalentProfile TalentProfile? @relation(fields: [talentId], references: [id], onDelete: Cascade)
+}
+
+model FormSubmissionAttempt {
+  id                String   @id @default(cuid())
+  ipAddress         String
+  formType          String
+  success           Boolean  @default(false)
+  honeypotTriggered Boolean  @default(false)
+  submissionTime    Decimal  @db.Decimal(10, 3)
+  userAgent         String?
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([formType])
+  @@index([ipAddress])
+}
+
+// Enhanced KYC models with separate document support
+model KycSubmission {
+  id              String             @id @default(cuid())
+  userId          String
+  status          VerificationStatus @default(PENDING)
+  submittedAt     DateTime           @default(now())
+  reviewedById    String?
+  reviewedAt      DateTime?
+  adminNotes      String?
+  rejectionReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  User            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  KycDocument     KycDocument[]
+
+  @@index([status])
+  @@index([submittedAt])
+  @@index([userId])
+}
+
+model KycDocument {
+  id            String        @id @default(cuid())
+  submissionId  String
+  documentType  DocumentType
+  fileName      String
+  filePath      String
+  fileUrl       String?
+  fileSize      Int?
+  mimeType      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  KycSubmission KycSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([documentType])
+}
+
+model Message {
+  id                            String         @id @default(cuid())
+  bookingId                     String
+  senderId                      String
+  receiverId                    String
+  content                       String
+  isRead                        Boolean        @default(false)
+  createdAt                     DateTime       @default(now())
+  updatedAt                     DateTime       @updatedAt
+  File                          File[]
+  Booking                       Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  User_Message_receiverIdToUser User           @relation("Message_receiverIdToUser", fields: [receiverId], references: [id])
+  User_Message_senderIdToUser   User           @relation("Message_senderIdToUser", fields: [senderId], references: [id])
+  Notification                  Notification[]
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  bookingId   String?
+  messageId   String?
+  eventId     String?
+  actionUrl   String?
+  emailSent   Boolean          @default(false)
+  emailSentAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  Booking     Booking?         @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  Event       Event?           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  Message     Message?         @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  User        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  emailMessages     Boolean  @default(true)
+  emailBookings     Boolean  @default(true)
+  emailPayments     Boolean  @default(true)
+  emailReviews      Boolean  @default(true)
+  emailReminders    Boolean  @default(true)
+  emailPayouts      Boolean  @default(true)
+  emailAdminUpdates Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  User              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrganizerProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  companyName   String?
+  bio           String?
+  website       String?
+  phoneNumber   String?
+  location      String?
+  eventTypes    String[]
+  totalEvents   Int      @default(0)
+  averageRating Decimal? @db.Decimal(3, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Package {
+  id            String        @id @default(cuid())
+  talentId      String
+  title         String
+  description   String
+  category      String
+  location      String?
+  price         Decimal       @db.Decimal(10, 2)
+  duration      String?
+  features      String[]
+  coverImageUrl String?
+  images        String[]
+  isPublished   Boolean       @default(false)
+  isActive      Boolean       @default(true)
+  priceIsHidden Boolean       @default(false)
+  viewCount     Int           @default(0)
+  inquiryCount  Int           @default(0)
+  bookingCount  Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  TalentProfile TalentProfile @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@index([talentId])
+  @@index([category])
+  @@index([location])
+  @@index([price])
+  @@index([isPublished])
+  @@index([isActive])
+  @@index([isPublished, isActive])
+  @@index([category, isPublished, isActive])
+  @@index([bookingCount])
+  @@index([createdAt])
+}
+
+model Payout {
+  id            String       @id @default(cuid())
+  talentId      String
+  bookingId     String?
+  amount        Decimal      @db.Decimal(10, 2)
+  status        PayoutStatus @default(PENDING)
+  payoutMethod  String       @default("MPESA")
+  mpesaNumber   String?
+  transferCode  String?      @unique
+  transferData  Json?
+  processedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  Booking       Booking?     @relation(fields: [bookingId], references: [id])
+  User          User         @relation(fields: [talentId], references: [id])
+}
+
+model Referral {
+  id                             String               @id @default(cuid())
+  referrerId                     String
+  referredId                     String
+  referralCode                   String
+  status                         ReferralStatus       @default(PENDING)
+  referrerReward                 Decimal?             @db.Decimal(10, 2)
+  referredReward                 Decimal?             @db.Decimal(10, 2)
+  rewardStatus                   ReferralRewardStatus @default(PENDING)
+  convertedAt                    DateTime?
+  conversionType                 String?
+  conversionBookingId            String?
+  rewardCreditedAt               DateTime?
+  rewardFailureReason            String?
+  createdAt                      DateTime             @default(now())
+  updatedAt                      DateTime             @updatedAt
+  User_Referral_referredIdToUser User                 @relation("Referral_referredIdToUser", fields: [referredId], references: [id], onDelete: Cascade)
+  User_Referral_referrerIdToUser User                 @relation("Referral_referrerIdToUser", fields: [referrerId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerId, referredId])
+  @@index([referralCode])
+  @@index([rewardStatus])
+  @@index([status])
+}
+
+model Review {
+  id                           String       @id @default(cuid())
+  bookingId                    String
+  giverId                      String
+  receiverId                   String
+  rating                       Int
+  comment                      String
+  reviewerType                 ReviewerType
+  isVisible                    Boolean      @default(false)
+  createdAt                    DateTime     @default(now())
+  updatedAt                    DateTime     @updatedAt
+  Booking                      Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  User_Review_giverIdToUser    User         @relation("Review_giverIdToUser", fields: [giverId], references: [id])
+  User_Review_receiverIdToUser User         @relation("Review_receiverIdToUser", fields: [receiverId], references: [id])
+
+  @@unique([bookingId, giverId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SuspiciousIp {
+  id              String    @id @default(cuid())
+  ipAddress       String    @unique
+  failedAttempts  Int       @default(0)
+  lastAttempt     DateTime  @default(now())
+  isSuspicious    Boolean   @default(false)
+  suspiciousUntil DateTime?
+  blockedUntil    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([ipAddress])
+  @@index([isSuspicious])
+}
+
+model TalentProfile {
+  id               String       @id @default(cuid())
+  userId           String       @unique
+  bio              String?
+  tagline          String?
+  location         String?
+  website          String?
+  phoneNumber      String?
+  category         String?
+  skills           String[]
+  experience       String?
+  hourlyRate       Decimal?     @db.Decimal(10, 2)
+  availability     String?
+  averageRating    Decimal?     @db.Decimal(3, 2)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  totalReviews     Int          @default(0)
+  totalBookings    Int          @default(0)
+  mpesaPhoneNumber String?
+  mpesaVerified    Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  epkUrl           String?
+  pastClients      String[]
+  profileViews     Int          @default(0)
+  socialLinks      Json?
+  username         String?      @unique
+  BankAccount      BankAccount?
+  File             File[]
+  Package          Package[]
+  User             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([location])
+  @@index([hourlyRate])
+  @@index([averageRating])
+  @@index([totalBookings])
+  @@index([category, location])
+  @@index([averageRating, totalReviews])
+}
+
+model TalentAvailability {
+  id          String             @id @default(cuid())
+  talentId    String
+  startDate   DateTime
+  endDate     DateTime
+  status      AvailabilityStatus @default(AVAILABLE)
+  isRecurring Boolean            @default(false)
+  recurringPattern String?       // e.g., "weekly", "monthly"
+  recurringDays    Int[]          // Days of week (0-6, Sunday=0)
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  
+  // Relations
+  User        User               @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  // Indexes for performance
+  @@index([talentId])
+  @@index([startDate, endDate])
+  @@index([status])
+}
+
+model Transaction {
+  id           String            @id @default(cuid())
+  bookingId    String
+  userId       String
+  metadata     Json?             @db.JsonB
+  type         TransactionType
+  status       TransactionStatus @default(PENDING)
+  amount       Float
+  currency     String            @default("KES")
+  paystackRef  String?           @unique
+  paystackData Json?             @db.JsonB
+  description  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  // Relations
+  Booking Booking @relation(fields: [bookingId], references: [id])
+  User    User    @relation(fields: [userId], references: [id])
+
+  // Indexes
+  @@index([bookingId])
+  @@index([userId])
+  @@index([paystackRef])
+}
+
+model User {
+  id                                 String                  @id @default(cuid())
+  name                               String?
+  email                              String                  @unique
+  password                           String?
+  sentMessages                       DirectMessage[]         @relation("SentMessages")
+  receivedMessages                   DirectMessage[]         @relation("ReceivedMessages")
+  emailVerified                      DateTime?
+  image                              String?
+  role                               UserRole                @default(ORGANIZER)
+  isActive                           Boolean                 @default(true)
+  isEmailVerified                    Boolean                 @default(false)
+  emailVerificationToken             String?
+  emailVerificationExpiry            DateTime?
+  verificationStatus                 VerificationStatus      @default(UNVERIFIED)
+  emailNotifications                 Boolean                 @default(true)
+  smsNotifications                   Boolean                 @default(false)
+  marketingEmails                    Boolean                 @default(true)
+  createdAt                          DateTime                @default(now())
+  updatedAt                          DateTime                @updatedAt
+  adminApprovalStatus                AdminApprovalStatus     @default(PENDING)
+  adminApprovedAt                    DateTime?
+  adminApprovedBy                    String?
+  adminRejectedAt                    DateTime?
+  adminRejectedBy                    String?
+  adminRejectionReason               String?
+  accountCreditKes                   Decimal                 @default(0) @db.Decimal(10, 2)
+  referralCode                       String?                 @unique
+  referrerId                         String?
+  // Organizer profile fields
+  companyName                        String?
+  websiteUrl                         String?
+  publicBio                          String?
+  profilePictureUrl                  String?
+  Account                            Account[]
+  Activity                           Activity[]
+  Booking_Booking_organizerIdToUser  Booking[]               @relation("Booking_organizerIdToUser")
+  Booking_Booking_talentIdToUser     Booking[]               @relation("Booking_talentIdToUser")
+  Dispute                            Dispute[]
+  Event                              Event[]
+  KycSubmission                      KycSubmission[]
+  Message_Message_receiverIdToUser   Message[]               @relation("Message_receiverIdToUser")
+  Message_Message_senderIdToUser     Message[]               @relation("Message_senderIdToUser")
+  Notification                       Notification[]
+  NotificationPreference             NotificationPreference?
+  OrganizerProfile                   OrganizerProfile?
+  Payout                             Payout[]
+  processedRefunds                   Refund[]                @relation("AdminProcessedRefunds")
+  Proposal                           Proposal[]              @relation("ProposalTalent")
+  Referral_Referral_referredIdToUser Referral[]              @relation("Referral_referredIdToUser")
+  Referral_Referral_referrerIdToUser Referral[]              @relation("Referral_referrerIdToUser")
+  Review_Review_giverIdToUser        Review[]                @relation("Review_giverIdToUser")
+  Review_Review_receiverIdToUser     Review[]                @relation("Review_receiverIdToUser")
+  Session                            Session[]
+  TalentProfile                      TalentProfile?
+  TalentAvailability                 TalentAvailability[]
+  Transaction                        Transaction[]
+  User                               User?                   @relation("UserToUser", fields: [referrerId], references: [id])
+  other_User                         User[]                  @relation("UserToUser")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@index([adminApprovalStatus])
+  @@index([role, adminApprovalStatus])
+  @@index([isActive, role])
+  @@index([emailVerificationToken])
+  @@index([referralCode])
+  @@index([createdAt])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model DirectMessage {
+  id         String   @id @default(cuid()) @map("id")
+  content    String   @map("content")
+  senderId   String   @map("senderId")
+  receiverId String   @map("receiverId")
+  isRead     Boolean  @default(false) @map("isRead")
+  createdAt  DateTime @default(now()) @map("createdAt")
+  updatedAt  DateTime @updatedAt @map("updatedAt")
+
+  // Relations
+  sender   User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId], map: "DirectMessage_senderId_idx")
+  @@index([receiverId], map: "DirectMessage_receiverId_idx")
+  @@index([createdAt], map: "DirectMessage_createdAt_idx")
+  @@map("DirectMessage")
+}
+
+model Refund {
+  id                 String   @id @default(cuid())
+  amount             Decimal  @db.Decimal(10, 2)
+  bookingId          String
+  disputeId          String?
+  paystackRefundId   String?  @unique
+  status             String   @default("PENDING")
+  reason             String?
+  processedByAdminId String
+  createdAt          DateTime @default(now())
+
+  // Relations
+  Booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  Dispute          Dispute? @relation(fields: [disputeId], references: [id], onDelete: SetNull)
+  ProcessedByAdmin User     @relation("AdminProcessedRefunds", fields: [processedByAdminId], references: [id])
+
+  @@index([bookingId])
+  @@index([disputeId])
+  @@index([processedByAdminId])
+  @@index([paystackRefundId])
+}
+
+model RegistrationAttempt {
+  id                String   @id @default(cuid())
+  emailNormalized   String
+  nameNormalized    String?
+  phoneNormalized   String?
+  ipAddress         String?
+  userAgent         String?
+  success           Boolean  @default(false)
+  duplicateDetected Boolean  @default(false)
+  duplicateUserId   String?
+  failureReason     String?
+  role              UserRole?
+  createdAt         DateTime @default(now())
+
+  @@index([emailNormalized])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@index([success])
+  @@index([duplicateDetected])
+}
