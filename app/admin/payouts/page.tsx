@@ -246,8 +246,8 @@ export default function PayoutsPage() {
 
       const data = await mockResponse.json();
 
-      if (!mockResponse.ok) {
-        throw new Error(data.error || "Failed to verify Paystack payment");
+      if (!mockResponse.ok || !data.success) {
+        throw new Error(data.data?.message || "Failed to verify Paystack payment");
       }
 
       console.log("Paystack verification status:", data);

@@ -14,7 +14,7 @@ export async function GET(
         id: params.id,
       },
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -111,7 +111,7 @@ export async function PUT(
         budgetMax: body.budgetMax ? parseFloat(body.budgetMax) : null,
       },
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             name: true,

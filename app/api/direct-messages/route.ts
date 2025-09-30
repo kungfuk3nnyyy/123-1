@@ -80,12 +80,16 @@ export async function GET(request: NextRequest) {
             }
           })
 
+          if (!user) {
+            return null;
+          }
+          
           return {
             user: {
               id: user.id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
+              name: user.name || 'Unknown User',
+              email: user.email || 'No email',
+              image: user.image || null,
               role: user.role,
               category: user.TalentProfile?.category,
               companyName: user.OrganizerProfile?.companyName,
@@ -97,9 +101,12 @@ export async function GET(request: NextRequest) {
         })
       )
 
+      // Filter out any null values and ensure type safety
+      const filteredConversations = conversations.filter((c): c is NonNullable<typeof c> => c !== null);
+      
       return NextResponse.json({
         success: true,
-        data: { conversations: conversations.filter(c => c.user) }
+        data: { conversations: filteredConversations }
       })
     }
 

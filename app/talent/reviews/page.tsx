@@ -12,8 +12,11 @@ import {
   User,
   Calendar,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react'
+import { EmptyState } from '@/components/empty-state'
+import { EMPTY_STATES } from '@/lib/empty-states'
 import Link from 'next/link'
 
 interface Review {

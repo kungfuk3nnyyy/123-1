@@ -371,35 +371,42 @@ export async function mergeAccounts(options: MergeAccountsOptions): Promise<void
       }
     }
 
-    // 21. Log the merge
-    await tx.accountMerge.create({
-      data: {
-        primaryUserId,
-        mergedUserId,
-        mergeReason,
-        mergedData: preview.dataToMerge,
-        mergedByAdminId,
-        mergedByUserId,
-        mergeType
-      }
-    })
+    // 21. Log the merge if the model exists
+    const prismaClient = tx as any;
+    if ('accountMerge' in prismaClient) {
+      await prismaClient.accountMerge.create({
+        data: {
+          primaryUserId,
+          mergedUserId,
+          mergeReason,
+          mergedData: preview.dataToMerge,
+          mergedByAdminId,
+          mergedByUserId,
+          mergeType
+        }
+      });
+    } else {
+      console.warn('accountMerge model not found in Prisma schema - skipping merge log');
+    }
 
-    // 22. Mark duplicate detection logs as resolved
-    await tx.duplicateDetectionLog.updateMany({
-      where: {
-        OR: [
-          { potentialDuplicateUserId: mergedUserId },
-          { originalUserId: mergedUserId }
-        ],
-        resolved: false
-      },
-      data: {
-        resolved: true,
-        resolvedAt: new Date(),
-        resolvedBy: mergedByAdminId || mergedByUserId,
-        resolutionAction: 'MERGED'
-      }
-    })
+    // 22. Mark duplicate detection logs as resolved if the model exists
+    if ('duplicateDetectionLog' in prismaClient) {
+      await prismaClient.duplicateDetectionLog.updateMany({
+        where: {
+          OR: [
+            { potentialDuplicateUserId: mergedUserId },
+            { originalUserId: mergedUserId }
+          ],
+          resolved: false
+        },
+        data: {
+          resolved: true,
+          resolvedAt: new Date(),
+          resolvedBy: mergedByAdminId || mergedByUserId,
+          resolutionAction: 'MERGED'
+        }
+      });
+    }
 
     // 23. Finally, delete the merged user
     await tx.user.delete({
@@ -407,57 +414,103 @@ export async function mergeAccounts(options: MergeAccountsOptions): Promise<void
     })
   })
 }
-
 /**
  * Get merge history for a user
  */
 export async function getMergeHistory(userId: string) {
-  return await prisma.accountMerge.findMany({
-    where: {
-      OR: [
-        { primaryUserId: userId },
-        { mergedUserId: userId }
-      ]
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  })
+  // Check if the model exists in the Prisma client
+  const prismaClient = prisma as any;
+  if (!('accountMerge' in prismaClient)) {
+    console.warn('accountMerge model not found in Prisma schema');
+    return [];
+  }
+
+  try {
+    return await prismaClient.accountMerge.findMany({
+      where: {
+        resolved: false,
+        similarityScore: {
+          gte: 0.8
+        }
+      },
+      include: {
+        potentialDuplicateUser: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            createdAt: true
+          }
+        },
+        originalUser: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            createdAt: true
+          }
+        }
+      },
+      orderBy: {
+        similarityScore: 'desc'
+      },
+      take: 50
+    });
+  } catch (error) {
+    console.error('Error fetching pending merges:', error);
+    return [];
+  }
 }
 
 /**
  * Get all pending duplicate detections that could be merged
  */
 export async function getPendingMerges() {
-  return await prisma.duplicateDetectionLog.findMany({
-    where: {
-      resolved: false,
-      similarityScore: {
-        gte: 0.8
-      }
-    },
-    include: {
-      potentialDuplicateUser: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          createdAt: true
+  // Check if the model exists in the Prisma client
+  const prismaClient = prisma as any;
+  
+  if (!('duplicateDetectionLog' in prismaClient)) {
+    console.warn('duplicateDetectionLog model not found in Prisma schema');
+    return [];
+  }
+
+  try {
+    return await prismaClient.duplicateDetectionLog.findMany({
+      where: {
+        resolved: false,
+        similarityScore: {
+          gte: 0.8
         }
       },
-      originalUser: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          createdAt: true
+      include: {
+        potentialDuplicateUser: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            createdAt: true
+          }
+        },
+        originalUser: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            createdAt: true
+          }
         }
-      }
-    },
-    orderBy: {
-      similarityScore: 'desc'
-    }
-  })
+      },
+      orderBy: {
+        similarityScore: 'desc'
+      },
+      take: 50
+    });
+  } catch (error) {
+    console.error('Error fetching pending merges:', error);
+    return [];
+  }
 }

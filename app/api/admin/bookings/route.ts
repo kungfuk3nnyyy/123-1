@@ -1,61 +1,98 @@
 
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { UserRole, BookingStatus, TransactionType, TransactionStatus, NotificationType } from '@prisma/client'
+import { UserRole, BookingStatus, DisputeStatus, TransactionType, TransactionStatus, NotificationType, Prisma, DisputeReason } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
 // Define types for better type safety
+// Type for the booking with relations
 interface BookingWithRelations {
   id: string
   status: BookingStatus
-  amount: number
-  platformFee: number
-  talentAmount: number
+  amount: Prisma.Decimal
+  platformFee: Prisma.Decimal
+  talentAmount: Prisma.Decimal
   talentId: string
   organizerId: string
+  eventId: string
+  isPaidOut: boolean
+  proposedDate: Date | null
+  acceptedDate: Date | null
+  completedDate: Date | null
+  notes: string | null
+  eventEndDateTime: Date | null
   createdAt: Date
+  updatedAt: Date
   User_Booking_organizerIdToUser?: {
-    name?: string
+    name: string | null
     email: string
     OrganizerProfile?: {
-      companyName?: string
-    }
-  }
+      companyName: string | null
+    } | null
+  } | null
   User_Booking_talentIdToUser?: {
-    name?: string
+    name: string | null
     email: string
     TalentProfile?: {
-      category?: string[]
-    }
-  }
+      category: string | null
+      skills?: string[]
+    } | null
+  } | null
   Event?: {
     title: string
-    eventDate?: Date
-    location?: string
-  }
-  Dispute?: any[]
-  Transaction?: any[]
+    eventDate: Date | null
+    location: string | null
+  } | null
+  Dispute: Array<{
+    id: string
+    status: DisputeStatus
+    createdAt: Date
+    updatedAt: Date
+    bookingId: string
+    disputedById: string
+    reason: DisputeReason
+    explanation: string
+    resolvedById: string | null
+    resolutionNotes: string | null
+    refundAmount: Prisma.Decimal | null
+    payoutAmount: Prisma.Decimal | null
+    resolvedAt: Date | null
+  }>
+  Transaction: Array<{
+    id: string
+    bookingId: string
+    userId: string
+    metadata: Prisma.JsonValue | null
+    type: TransactionType
+    status: TransactionStatus
+    amount: number
+    currency: string
+    paystackRef: string | null
+    paystackData: Prisma.JsonValue | null
+    description: string | null
+    createdAt: Date
+    updatedAt: Date
+  }>
   _count?: {
-    Message?: number
+    Message: number
   }
 }
 
 interface BookingUpdateData {
   id: string
   status: BookingStatus
-  amount: number
-  platformFee: number
-  talentAmount: number
+  amount: Prisma.Decimal | number
+  platformFee: Prisma.Decimal | number
+  talentAmount: Prisma.Decimal | number
   talentId: string
   organizerId: string
-  notes?: string
+  notes?: string | null
   Event?: {
     title?: string
-  }
+  } | null
 }
 
 /**
@@ -254,14 +291,15 @@ export async function GET(request: NextRequest) {
       eventTitle: booking.Event?.title,
       eventDate: booking.Event?.eventDate?.toISOString(),
       eventLocation: booking.Event?.location,
-      amount: Number(booking.amount),
-      platformFee: Number(booking.platformFee),
-      talentAmount: Number(booking.talentAmount),
+      amount: typeof booking.amount === 'number' ? booking.amount : booking.amount.toNumber(),
+      platformFee: typeof booking.platformFee === 'number' ? booking.platformFee : booking.platformFee.toNumber(),
+      talentAmount: typeof booking.talentAmount === 'number' ? booking.talentAmount : booking.talentAmount.toNumber(),
       status: booking.status,
       createdAt: booking.createdAt.toISOString(),
-      hasDisputes: booking.Dispute?.length > 0,
+      hasDisputes: (booking.Dispute?.length ?? 0) > 0,
       messageCount: booking._count?.Message || 0,
-      transactionStatus: booking.Transaction?.[0]?.status || 'PENDING'
+      transactionStatus: booking.Transaction?.[0]?.status || TransactionStatus.PENDING,
+      paystackRef: booking.Transaction?.[0]?.paystackRef || null
     }))
 
     return NextResponse.json({

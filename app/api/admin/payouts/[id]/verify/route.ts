@@ -103,11 +103,11 @@ export async function POST(
       }
     })
 
-    if (newStatus === PayoutStatus.COMPLETED && !payout.Booking?.isPaidOut) {
+    if (newStatus === PayoutStatus.COMPLETED && payout.bookingId && !payout.Booking?.isPaidOut) {
       await prisma.booking.update({
         where: { id: payout.bookingId },
         data: { isPaidOut: true }
-      })
+      });
     }
 
     return NextResponse.json({

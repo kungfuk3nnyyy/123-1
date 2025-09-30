@@ -15,13 +15,18 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
 })
 
 // Handle connection errors and graceful shutdown
-prisma.$on('error', (e) => {
-  console.error('Prisma Client Error:', e)
+prisma.$on('beforeExit' as never, async () => {
+  await prisma.$disconnect()
 })
 
-// Graceful shutdown
-process.on('beforeExit', async () => {
-  await prisma.$disconnect()
+// Handle Prisma errors
+prisma.$use(async (params, next) => {
+  try {
+    return await next(params)
+  } catch (error) {
+    console.error('Prisma Client Error:', error)
+    throw error
+  }
 })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

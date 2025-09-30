@@ -41,12 +41,14 @@ const notificationIcons: Record<NotificationType, any> = {
   BOOKING_COMPLETED: CheckCircle,
   ADMIN_USER_REGISTRATION: Users,
   DISPUTE_CREATED: AlertCircle,
-  DISPUTE_RESOLVED: CheckCircle
+  DISPUTE_RESOLVED: CheckCircle,
+  DIRECT_MESSAGE: MessageSquare
 }
 
 // Map notification types to colors
 const notificationColors: Record<NotificationType, string> = {
   MESSAGE_RECEIVED: 'text-calm-soft-blue',
+  DIRECT_MESSAGE: 'text-blue-500',
   BOOKING_REQUEST: 'text-purple-600',
   BOOKING_ACCEPTED: 'text-green-600',
   BOOKING_DECLINED: 'text-red-600',

@@ -71,16 +71,29 @@ export function TalentCalendar() {
   const [isLoading, setIsLoading] = useState(false)
   const [currentDate, setCurrentDate] = useState(new Date())
 
-  // Form state
-  const [formData, setFormData] = useState({
+  // Form state type
+  type FormData = {
+    startDate: string
+    startTime: string
+    endDate: string
+    endTime: string
+    status: 'AVAILABLE' | 'UNAVAILABLE' | 'BUSY'
+    isRecurring: boolean
+    recurringPattern: 'weekly' | 'biweekly' | 'monthly'
+    recurringDays: number[]
+    notes: string
+    generateUntil: string
+  }
+
+  const [formData, setFormData] = useState<FormData>({
     startDate: '',
     startTime: '09:00',
     endDate: '',
     endTime: '17:00',
-    status: AvailabilityStatus.AVAILABLE,
+    status: 'AVAILABLE',
     isRecurring: false,
     recurringPattern: 'weekly',
-    recurringDays: [] as number[],
+    recurringDays: [],
     notes: '',
     generateUntil: ''
   })
@@ -275,7 +288,7 @@ export function TalentCalendar() {
       startTime: '09:00',
       endDate: '',
       endTime: '17:00',
-      status: AvailabilityStatus.AVAILABLE,
+      status: 'AVAILABLE',
       isRecurring: false,
       recurringPattern: 'weekly',
       recurringDays: [],
@@ -294,9 +307,9 @@ export function TalentCalendar() {
       startTime: format(entry.startDate, 'HH:mm'),
       endDate: format(entry.endDate, 'yyyy-MM-dd'),
       endTime: format(entry.endDate, 'HH:mm'),
-      status: entry.status,
+      status: entry.status as 'AVAILABLE' | 'UNAVAILABLE' | 'BUSY',
       isRecurring: entry.isRecurring,
-      recurringPattern: entry.recurringPattern || 'weekly',
+      recurringPattern: (entry.recurringPattern as 'weekly' | 'biweekly' | 'monthly') || 'weekly',
       recurringDays: entry.recurringDays || [],
       notes: entry.notes || '',
       generateUntil: ''

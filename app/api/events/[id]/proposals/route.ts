@@ -191,7 +191,7 @@ export async function POST(
         Event: {
           select: {
             title: true,
-            user: {
+            User: {
               select: {
                 name: true,
               },

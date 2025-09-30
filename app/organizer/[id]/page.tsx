@@ -152,12 +152,12 @@ async function getOrganizerProfile(id: string) {
     return {
       id: organizer.id,
       name: organizer.name,
-      email: organizer.email,
-      displayName: organizer.companyName || organizer.OrganizerProfile?.companyName || organizer.name,
-      bio: organizer.publicBio || organizer.OrganizerProfile?.bio,
-      website: organizer.websiteUrl || organizer.OrganizerProfile?.website,
-      profileImage: organizer.profilePictureUrl || organizer.image,
-      location: organizer.OrganizerProfile?.location,
+      email: organizer.email || '',
+      displayName: organizer.companyName || organizer.OrganizerProfile?.companyName || organizer.name || 'Organizer',
+      bio: organizer.publicBio || organizer.OrganizerProfile?.bio || null,
+      website: organizer.websiteUrl || organizer.OrganizerProfile?.website || null,
+      profileImage: organizer.profilePictureUrl || organizer.image || null,
+      location: organizer.OrganizerProfile?.location || null,
       eventTypes: organizer.OrganizerProfile?.eventTypes || [],
       verified: organizer.verificationStatus === VerificationStatus.VERIFIED,
       memberSince: organizer.createdAt.toISOString(),
@@ -185,13 +185,13 @@ async function getOrganizerProfile(id: string) {
         id: review.id,
         rating: review.rating,
         comment: review.comment,
-        reviewerType: review.reviewerType,
+        reviewerType: review.reviewerType || 'talent',
         createdAt: review.createdAt.toISOString(),
         reviewer: {
           name: review.User_Review_giverIdToUser?.name || 'Anonymous',
-          image: review.User_Review_giverIdToUser?.image,
-          category: review.User_Review_giverIdToUser?.TalentProfile?.category,
-          username: review.User_Review_giverIdToUser?.TalentProfile?.username
+          image: review.User_Review_giverIdToUser?.image || null,
+          category: review.User_Review_giverIdToUser?.TalentProfile?.category || null,
+          username: review.User_Review_giverIdToUser?.TalentProfile?.username || null
         },
         event: {
           title: review.Booking?.Event?.title || 'Event',

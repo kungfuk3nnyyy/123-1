@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         isVisible: true
       },
       include: {
-        giver: {
+        User_Review_giverIdToUser: {
           select: {
             id: true,
             name: true,

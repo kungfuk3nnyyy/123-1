@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { TransactionStatus } from '@prisma/client'
+import { processPaymentSuccess } from '@/lib/payment/payment-utils'
 
 export async function POST(
   request: NextRequest,
@@ -48,14 +49,33 @@ export async function POST(
       })
     }
 
-    // Import the processPaymentSuccess function from your callback route
-    const { processPaymentSuccess } = await import('../payment/callback/route')
+    // Process the payment using the shared utility function
+    if (!transaction.paystackRef) {
+      throw new Error('Transaction reference not found')
+    }
     const result = await processPaymentSuccess(transaction.paystackRef, 'redirect')
 
+    // Get the updated transaction with related data
+    const updatedTransaction = await prisma.transaction.findUnique({
+      where: { id: transaction.id },
+      include: {
+        Booking: {
+          include: {
+            Event: true,
+            User_Booking_talentIdToUser: true,
+            User_Booking_organizerIdToUser: true
+          }
+        }
+      }
+    })
+
     return NextResponse.json({
-      success: true,
+      success: result.success,
       status: result.success ? 'completed' : 'pending',
-      transaction: result.transaction
+      bookingId: result.bookingId,
+      transactionId: result.transactionId,
+      amount: result.amount,
+      transaction: updatedTransaction
     })
 
   } catch (error) {

@@ -50,7 +50,7 @@ export class MarketplaceService {
     return await prisma.event.findMany({
       where,
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -73,7 +73,7 @@ export class MarketplaceService {
     return await prisma.event.findUnique({
       where: { id },
       include: {
-        user: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -161,11 +161,11 @@ export class MarketplaceService {
     });
 
     // Filter by rating if specified
-    if (filters.rating && filters.rating > 0) {
-      return packages.filter(pkg => 
-        pkg.TalentProfile.averageRating && 
-        pkg.TalentProfile.averageRating.toNumber() >= filters.rating
-      );
+    if (filters.rating !== undefined && filters.rating > 0) {
+      return packages.filter(pkg => {
+        const rating = pkg.TalentProfile.averageRating;
+        return rating !== null && Number(rating) >= filters.rating!;
+      });
     }
 
     return packages;
@@ -199,7 +199,7 @@ export class MarketplaceService {
         Event: {
           select: {
             title: true,
-            user: {
+            User: {
               select: {
                 name: true,
               },
@@ -280,7 +280,7 @@ export class MarketplaceService {
       });
 
       // Calculate platform fee (10%)
-      const amount = proposal.quoteAmountKes;
+      const amount = Number(proposal.quoteAmountKes);
       const platformFeeRate = 0.10;
       const platformFee = amount * platformFeeRate;
       const talentAmount = amount - platformFee;

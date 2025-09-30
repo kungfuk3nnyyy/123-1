@@ -1,4 +1,5 @@
 // Fallback icons to prevent TypeScript errors when lucide-react is not available
+import React from 'react';
 import { type ComponentType, type SVGProps } from 'react';
 
 // Create a simple fallback icon component

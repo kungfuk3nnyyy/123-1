@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { TransactionType } from '@prisma/client'
 import { UserRole, TransactionStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -98,7 +99,7 @@ export async function POST(
     const transactionData = {
       bookingId: booking.id,
       userId: session.user.id,
-      type: 'BOOKING_PAYMENT',
+      type: TransactionType.BOOKING_PAYMENT,
       status: TransactionStatus.PENDING,
       amount: Number(booking.amount),
       currency: 'KES',

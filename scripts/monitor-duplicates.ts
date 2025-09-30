@@ -1,4 +1,3 @@
-
 #!/usr/bin/env tsx
 
 /**
@@ -98,7 +97,7 @@ async function checkRecentRegistrations(options: MonitorOptions) {
     if (options.verbose) {
       console.log(message)
       recentAttempts.forEach(attempt => {
-        console.log(`  - ${attempt.email} (${attempt.failureReason})`)
+        console.log(`  - ${attempt.emailNormalized} (${attempt.failureReason})`)
       })
     }
 

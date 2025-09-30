@@ -4,28 +4,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { UserRole, VerificationStatus } from '@prisma/client'
+import { UserRole, VerificationStatus, KycSubmission, DocumentType } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
 interface KycStatusCount {
   status: VerificationStatus
-  _count: number
+  _count: {
+    _all: number
+  }
 }
 
-interface KycSubmissionData {
-  id: string
-  userId: string
-  documentType: string
-  status: VerificationStatus
-  submittedAt: Date
-  reviewedAt: Date | null
+interface KycSubmissionWithUser extends KycSubmission {
   User: {
     id: string
     name: string | null
     email: string
     role: UserRole
   }
+  KycDocument: Array<{
+    documentType: DocumentType
+  }>
 }
 
 interface CompletedSubmissionData {
@@ -44,7 +43,9 @@ export async function GET(request: NextRequest) {
     // Get KYC submission counts by status
     const kycStatusCounts = await prisma.kycSubmission.groupBy({
       by: ['status'],
-      _count: true
+      _count: {
+        _all: true
+      }
     })
 
     // Get recent KYC submissions (last 7 days)
@@ -62,6 +63,12 @@ export async function GET(request: NextRequest) {
             name: true,
             email: true,
             role: true
+          }
+        },
+        KycDocument: {
+          take: 1, // Just get the first document for the type
+          select: {
+            documentType: true
           }
         }
       },
@@ -87,6 +94,12 @@ export async function GET(request: NextRequest) {
             name: true,
             email: true,
             role: true
+          }
+        },
+        KycDocument: {
+          take: 1,
+          select: {
+            documentType: true
           }
         }
       },
@@ -117,42 +130,46 @@ export async function GET(request: NextRequest) {
         return sum + processingTime
       }, 0) / completedSubmissions.length / (1000 * 60 * 60 * 24) : 0 // Convert to days
 
-    // Format status counts
-    const statusSummary = {
-      pending: kycStatusCounts.find((s: KycStatusCount) => s.status === VerificationStatus.PENDING)?._count || 0,
-      verified: kycStatusCounts.find((s: KycStatusCount) => s.status === VerificationStatus.VERIFIED)?._count || 0,
-      rejected: kycStatusCounts.find((s: KycStatusCount) => s.status === VerificationStatus.REJECTED)?._count || 0,
-      unverified: kycStatusCounts.find((s: KycStatusCount) => s.status === VerificationStatus.UNVERIFIED)?._count || 0
-    }
+    // Format status counts with proper type safety
+    const getStatusCount = (status: VerificationStatus): number => {
+      const count = kycStatusCounts.find(s => s.status === status)?._count?._all;
+      return typeof count === 'number' ? count : 0;
+    };
 
+    const statusSummary = {
+      pending: getStatusCount(VerificationStatus.PENDING),
+      verified: getStatusCount(VerificationStatus.VERIFIED),
+      rejected: getStatusCount(VerificationStatus.REJECTED),
+      unverified: getStatusCount(VerificationStatus.UNVERIFIED)
+    };
     return NextResponse.json({ 
       success: true, 
       data: {
         statusSummary,
-        recentSubmissions: recentSubmissions.map((submission: KycSubmissionData) => ({
+        recentSubmissions: recentSubmissions.map((submission: KycSubmissionWithUser) => ({
           id: submission.id,
           userId: submission.userId,
-          userName: submission.User.name,
-          userEmail: submission.User.email,
-          userRole: submission.User.role,
-          documentType: submission.documentType,
+          userName: submission.User?.name || null,
+          userEmail: submission.User?.email || '',
+          userRole: submission.User?.role || UserRole.TALENT,
+          documentType: submission.KycDocument[0]?.documentType || DocumentType.ID_FRONT,
           status: submission.status,
           submittedAt: submission.submittedAt,
           reviewedAt: submission.reviewedAt,
-          isOverdue: submission.submittedAt < threeDaysAgo && submission.status === VerificationStatus.PENDING
+          isOverdue: submission.status === VerificationStatus.PENDING && 
+                    submission.submittedAt < new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
         })),
-        overdueSubmissions: overdueSubmissions.map((submission: KycSubmissionData) => ({
+        overdueSubmissions: overdueSubmissions.map((submission: KycSubmissionWithUser) => ({
           id: submission.id,
           userId: submission.userId,
-          userName: submission.User.name,
-          userEmail: submission.User.email,
-          userRole: submission.User.role,
-          documentType: submission.documentType,
+          userName: submission.User?.name || null,
+          userEmail: submission.User?.email || '',
+          documentType: submission.KycDocument[0]?.documentType || DocumentType.ID_FRONT,
           submittedAt: submission.submittedAt,
           daysOverdue: Math.floor((Date.now() - submission.submittedAt.getTime()) / (1000 * 60 * 60 * 24))
         })),
         metrics: {
-          totalSubmissions: kycStatusCounts.reduce((sum: number, s: KycStatusCount) => sum + s._count, 0),
+          totalSubmissions: kycStatusCounts.reduce((sum, s) => sum + (s._count?._all || 0), 0),
           pendingCount: statusSummary.pending,
           overdueCount: overdueSubmissions.length,
           averageProcessingDays: Math.round(averageProcessingTime * 10) / 10, // Round to 1 decimal

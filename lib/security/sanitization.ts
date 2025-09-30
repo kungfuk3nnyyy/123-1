@@ -99,7 +99,7 @@ export function sanitizeRichText(dirty: string): string {
     return ''
   }
   
-  return purify.sanitize(dirty, {
+  const config = {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'em', 'u', 'ol', 'ul', 'li', 
       'h3', 'h4', 'h5', 'h6', 'blockquote', 'a'
@@ -110,7 +110,10 @@ export function sanitizeRichText(dirty: string): string {
     },
     ALLOWED_URI_REGEXP: /^https?:\/\//,
     ALLOW_DATA_ATTR: false,
-  })
+  };
+
+  // Convert the result to string to handle TrustedHTML return type
+  return String(purify.sanitize(dirty, config as any))
 }
 
 // Sanitize search queries

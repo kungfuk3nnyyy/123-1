@@ -101,21 +101,14 @@ const getNavLinks = (role: string, userId: string): SidebarItem[] => {
 };
 
 
-export function Sidebar() {
+interface SidebarProps {
+  items: SidebarItem[]
+  userType: string
+}
+
+export function Sidebar({ items, userType }: SidebarProps) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
-  const { data: session } = useSession()
-
-  const role = session?.user?.role
-  const userId = session?.user?.id
-  const userType = role ? role.charAt(0).toUpperCase() + role.slice(1).toLowerCase() : ''
-  
-  // Return null or a loading skeleton if session data is not yet available
-  if (!role || !userId) {
-    return null; 
-  }
-
-  const items = getNavLinks(role, userId);
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">

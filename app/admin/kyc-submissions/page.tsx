@@ -41,30 +41,50 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Loader2,
   AlertCircle,
-  MoreHorizontal,
-  FileDown,
-  User,
+  AlertTriangle,
+  ArrowDownWideNarrow,
+  ArrowUpDown,
+  Ban,
+  Calendar,
+  Check,
   CheckCircle,
-  XCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  CircleDashed,
   Clock,
+  Download,
+  ExternalLink,
   Eye,
   FileText,
-  CreditCard,
+  Filter,
+  FileDown,
+  List,
+  Loader2,
   Building,
-  ZoomIn
+  CreditCard,
+  Mail,
+  MoreHorizontal,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  User,
+  X,
+  XCircle,
+  ZoomIn,
 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
-import Image from 'next/image'
+import NextImage from 'next/image'
+import { Button } from '@/components/ui/button'
 
 type VerificationStatus = 'ALL' | 'PENDING' | 'VERIFIED' | 'REJECTED'
 
@@ -105,7 +125,10 @@ const KycStatusBadge = ({ status }: { status: VerificationStatus }) => {
       className: 'bg-red-100 text-red-800',
       icon: <XCircle className="h-3 w-3 mr-1.5" />,
     },
-    ALL: {},
+    ALL: {
+      className: 'bg-gray-100 text-gray-800',
+      icon: <List className="h-3 w-3 mr-1.5" />,
+    },
   }
 
   const config = statusConfig[status] || {}
@@ -162,7 +185,7 @@ const DocumentViewer = ({
         </DialogHeader>
         <div className="flex justify-center p-4">
           <div className="relative max-w-full max-h-[60vh] border rounded-lg overflow-hidden">
-            <Image
+            <NextImage
               src={`/api/admin/kyc/document/${document.id}`}
               alt={formatDocumentType(document.documentType)}
               width={800}
@@ -276,7 +299,7 @@ const ViewSubmissionModal = ({
                                     </div>
                                     {document ? (
                                       <div className="relative border rounded-lg overflow-hidden bg-gray-100 aspect-[3/2]">
-                                        <Image
+                                        <NextImage
                                           src={`/api/admin/kyc/document/${document.id}`}
                                           alt={`ID ${docType === 'ID_FRONT' ? 'Front' : 'Back'}`}
                                           fill
@@ -316,7 +339,7 @@ const ViewSubmissionModal = ({
                                     <span className="font-medium text-sm">Business Certificate</span>
                                   </div>
                                   <div className="relative border rounded-lg overflow-hidden bg-gray-100 aspect-[3/2] max-w-md">
-                                    <Image
+                                    <NextImage
                                       src={`/api/admin/kyc/document/${document.id}`}
                                       alt="Business Certificate"
                                       fill
@@ -467,7 +490,7 @@ const ReviewModal = ({
                           </div>
                           {document ? (
                             <div className="relative border rounded-lg overflow-hidden bg-gray-100 aspect-[3/2]">
-                              <Image
+                              <NextImage
                                 src={`/api/admin/kyc/document/${document.id}`}
                                 alt={`ID ${docType === 'ID_FRONT' ? 'Front' : 'Back'}`}
                                 fill
@@ -517,7 +540,7 @@ const ReviewModal = ({
                           </Button>
                         </div>
                         <div className="relative border rounded-lg overflow-hidden bg-gray-100 aspect-[3/2] max-w-md">
-                          <Image
+                          <NextImage
                             src={`/api/admin/kyc/document/${document.id}`}
                             alt="Business Certificate"
                             fill

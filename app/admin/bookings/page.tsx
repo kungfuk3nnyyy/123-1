@@ -26,6 +26,15 @@ import {
   MessageSquare,
   ExternalLink
 } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+
+const EMPTY_STATES = {
+  ADMIN_BOOKINGS: {
+    icon: Calendar,
+    title: 'No bookings found',
+    description: 'There are no bookings to display at the moment. Check back later or adjust your filters.'
+  }
+}
 
 interface Booking {
   id: string

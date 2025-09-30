@@ -87,6 +87,8 @@ export const packageSchema = z.object({
   location: z.string()
     .min(3, 'Location must be at least 3 characters')
     .max(100, 'Location must be less than 100 characters'),
+    
+  isActive: z.boolean().default(true),
   
   requirements: z.string()
     .max(500, 'Requirements must be less than 500 characters')
@@ -94,9 +96,7 @@ export const packageSchema = z.object({
   
   tags: z.array(z.string())
     .min(1, 'Please add at least one tag')
-    .max(10, 'Maximum 10 tags allowed'),
-  
-  isActive: z.boolean().default(true)
+    .max(10, 'Maximum 10 tags allowed')
 });
 
 // KYC Upload Schema (simplified for file uploads)

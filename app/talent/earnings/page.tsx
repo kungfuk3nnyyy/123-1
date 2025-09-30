@@ -1,20 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { EmptyState } from '@/components/empty-state'
+import { EMPTY_STATES } from '@/lib/empty-states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
   ArrowLeft,
   DollarSign,
-  TrendingUp,
+  Download,
   Clock,
   CheckCircle,
   AlertCircle,
+  XCircle,
+  ArrowUpDown,
   Calendar,
-  Download,
-  XCircle
+  TrendingUp,
+  ChevronDown,
+  MoreHorizontal,
+  Plus,
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  RefreshCw
 } from 'lucide-react'
 import { TransactionStatus } from '@prisma/client'
 import Link from 'next/link'
@@ -131,6 +143,7 @@ export default function TalentEarnings() {
       [TransactionStatus.PENDING]: { variant: 'secondary', label: 'Pending', icon: Clock },
       [TransactionStatus.COMPLETED]: { variant: 'default', label: 'Completed', icon: CheckCircle },
       [TransactionStatus.FAILED]: { variant: 'destructive', label: 'Failed', icon: AlertCircle },
+      [TransactionStatus.REFUNDED]: { variant: 'outline', label: 'Refunded', icon: RefreshCw },
       [TransactionStatus.CANCELLED]: { variant: 'destructive', label: 'Cancelled', icon: XCircle }
     }
 

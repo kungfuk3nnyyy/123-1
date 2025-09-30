@@ -1,6 +1,10 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for production builds
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
+  // Only include page files with these extensions
+  pageExtensions: ['page.tsx', 'page.ts', 'page.jsx', 'page.js'],
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs']
   },

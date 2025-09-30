@@ -27,6 +27,7 @@ interface PackageData {
       id: string
       name: string | null
       email: string
+      verificationStatus: VerificationStatus
     }
     BankAccount: {
       isVerified: boolean

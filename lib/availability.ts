@@ -61,8 +61,10 @@ export async function checkTalentAvailability(
         OR: [
           {
             // Check proposed date overlaps
-            proposedDate: { not: null },
-            proposedDate: { lt: endDate },
+            proposedDate: { 
+              not: null,
+              lt: endDate
+            },
             OR: [
               { eventEndDateTime: { gt: startDate } },
               { 
@@ -73,8 +75,10 @@ export async function checkTalentAvailability(
           },
           {
             // Check accepted date overlaps
-            acceptedDate: { not: null },
-            acceptedDate: { lt: endDate },
+            acceptedDate: { 
+              not: null,
+              lt: endDate 
+            },
             OR: [
               { eventEndDateTime: { gt: startDate } },
               { 

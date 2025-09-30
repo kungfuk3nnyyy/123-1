@@ -38,17 +38,22 @@ interface Booking {
   amount: number
   talentAmount: number
   createdAt: string
+  eventEndDateTime?: string | null
   event: {
+    id: string
     title: string
-    eventDate: string
+    eventDate: string  // Changed to string only to match usage
+    duration?: number | null
   }
   talent: {
+    id: string
     name: string
     talentProfile: {
       category: string
-    }
+    } | null
   }
   transactions: Array<{
+    id: string
     status: string
     amount: number
   }>
@@ -255,9 +260,10 @@ export default function BookingsPage() {
       
       case BookingStatus.IN_PROGRESS:
         // Check if event has ended to show finalize button
+        const eventDate = new Date(booking.event.eventDate)
         const eventEndTime = booking.eventEndDateTime 
           ? new Date(booking.eventEndDateTime)
-          : new Date(booking.event.eventDate.getTime() + (booking.event.duration || 0) * 60 * 60 * 1000)
+          : new Date(eventDate.getTime() + (booking.event.duration || 0) * 60 * 60 * 1000)
         const now = new Date()
         const isEventOver = eventEndTime <= now
         

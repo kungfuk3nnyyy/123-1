@@ -657,10 +657,10 @@ export default function VerificationPage() {
                 
                 <FormSubmitButton
                   isSubmitting={isSubmitting || submitting}
-                  isValid={isValid && (
+                  isValid={!!(isValid && (
                     (watchedDocumentType === 'national_id' && idFrontFile && idBackFile) ||
                     (watchedDocumentType === 'business_registration' && businessCertFile)
-                  )}
+                  ))}
                   className="w-full"
                 >
                   {isSubmitting || submitting ? (

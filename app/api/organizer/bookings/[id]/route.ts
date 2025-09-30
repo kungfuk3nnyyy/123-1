@@ -80,7 +80,7 @@ export async function PUT(
       include: {
         User_Booking_talentIdToUser: true,
         Event: true,
-        transactions: true
+        Transaction: true
       }
     })
 
@@ -313,7 +313,7 @@ export async function POST(
       include: {
         User_Booking_talentIdToUser: true,
         Event: true,
-        transactions: true
+        Transaction: true
       }
     })
 

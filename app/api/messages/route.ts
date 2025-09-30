@@ -154,7 +154,8 @@ const postHandler = async (request: NextRequest) => {
     try {
       messageData = validateInput(userInputSchemas.message, messageData);
     } catch (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
     // Sanitize content

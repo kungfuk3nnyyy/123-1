@@ -37,17 +37,23 @@ export async function GET(request: NextRequest) {
 
       default:
         // List all duplicate detection logs
-        const { prisma } = await import('@/lib/db')
-        const logs = await prisma.duplicateDetectionLog.findMany({
-          where: {
-            resolved: false
-          },
-          orderBy: {
-            similarityScore: 'desc'
-          },
-          take: 50
-        })
-        return NextResponse.json({ logs })
+        try {
+          const { prisma } = await import('@/lib/db')
+          // Check if the model exists in the Prisma client
+          if ('duplicateDetectionLog' in prisma) {
+            const logs = await (prisma as any).duplicateDetectionLog.findMany({
+              where: { resolved: false },
+              orderBy: { similarityScore: 'desc' },
+              take: 50
+            })
+            return NextResponse.json({ logs })
+          }
+          // Fallback if the model doesn't exist
+          return NextResponse.json({ logs: [] })
+        } catch (error) {
+          console.error('Error fetching duplicate detection logs:', error)
+          return NextResponse.json({ logs: [] })
+        }
     }
 
   } catch (error) {

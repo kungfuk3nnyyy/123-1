@@ -36,7 +36,8 @@ RUN mkdir -p uploads/kyc uploads/profile uploads/epk && \
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build the application
+# Build the application with production settings
+ENV NODE_ENV production
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -51,7 +52,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files (use Docker-optimized config)
-COPY --from=builder /app/next.config.docker.js ./next.config.js
+COPY --from=builder /app/next.config.docker.js ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
@@ -60,6 +61,7 @@ COPY --from=builder /app/scripts ./scripts
 # Copy the built application
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/server ./.next/server
 
 # Create and set permissions for uploads directory
 RUN mkdir -p /app/uploads/kyc /app/uploads/profile /app/uploads/epk && \
@@ -79,6 +81,7 @@ ENV HOSTNAME "0.0.0.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node healthcheck.js || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
+# Start the application
 CMD ["node", "server.js"]

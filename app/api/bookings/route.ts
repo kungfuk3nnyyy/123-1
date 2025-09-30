@@ -232,7 +232,15 @@ export async function POST(request: NextRequest) {
         organizerId: session.user.id,
         title: packageDetails?.title || 'Custom Booking',
         description: packageDetails?.description || message || 'Custom booking request',
-        category: packageDetails?.category || talent.TalentProfile?.category || 'General',
+        category: (() => {
+          if (packageDetails && Array.isArray(packageDetails.category)) {
+            return packageDetails.category;
+          }
+          if (talent.TalentProfile?.category) {
+            return [talent.TalentProfile.category];
+          }
+          return ['General'];
+        })(),
         location: venue,
         eventDate: new Date(eventDate),
         budget: bookingAmount,

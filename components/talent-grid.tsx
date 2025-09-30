@@ -18,6 +18,7 @@ interface Talent {
   averageRating: number | null;
   totalReviews: number;
   hourlyRate: number | null;
+  availability: string | null;
   BankAccount: {
     isVerified: boolean;
   } | null;

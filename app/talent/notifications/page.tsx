@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { EmptyState } from '@/components/empty-state'
+import { EMPTY_STATES } from '@/lib/empty-states'
 import { 
   Bell, 
   MessageSquare, 
@@ -31,6 +33,7 @@ import { formatDistanceToNow } from 'date-fns'
 // Map notification types to icons
 const notificationIcons: Record<NotificationType, any> = {
   MESSAGE_RECEIVED: MessageSquare,
+  DIRECT_MESSAGE: MessageSquare,
   BOOKING_REQUEST: Calendar,
   BOOKING_ACCEPTED: CheckCircle,
   BOOKING_DECLINED: AlertCircle,
@@ -47,6 +50,7 @@ const notificationIcons: Record<NotificationType, any> = {
 // Map notification types to colors
 const notificationColors: Record<NotificationType, string> = {
   MESSAGE_RECEIVED: 'text-calm-soft-blue',
+  DIRECT_MESSAGE: 'text-calm-soft-blue',
   BOOKING_REQUEST: 'text-purple-600',
   BOOKING_ACCEPTED: 'text-green-600',
   BOOKING_DECLINED: 'text-red-600',

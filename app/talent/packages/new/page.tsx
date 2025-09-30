@@ -3,6 +3,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,7 +86,8 @@ export default function CreatePackagePage() {
     watch,
     setValue,
     formState: { errors, isValid, isSubmitting }
-  } = useZodForm(packageSchema, {
+  } = useForm<PackageFormData>({
+    resolver: zodResolver(packageSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -92,10 +95,11 @@ export default function CreatePackagePage() {
       price: 100,
       duration: 1,
       location: '',
+      isActive: true,
       requirements: '',
-      tags: [],
-      isActive: true
-    }
+      tags: []
+    },
+    mode: 'onChange'
   })
 
   const [features, setFeatures] = useState<string[]>([''])

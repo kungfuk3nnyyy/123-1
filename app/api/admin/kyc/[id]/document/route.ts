@@ -40,59 +40,47 @@ export async function GET(
     if (!kycSubmission) {
       return NextResponse.json({ error: 'KYC submission not found' }, { status: 404 })
     }
-
     let filePath: string
     let fileName: string
     let mimeType: string | null = null
 
     // Check if this is a new submission with separate documents
-    if (kycSubmission.KycDocument && kycSubmission.KycDocument.length > 0) {
-      const document = kycSubmission.KycDocument[0]
-      filePath = document.filePath
-      fileName = document.fileName
-      mimeType = document.mimeType
+    if (!kycSubmission.KycDocument || kycSubmission.KycDocument.length === 0) {
+      return NextResponse.json({ error: 'No documents found for this KYC submission' }, { status: 404 })
+    }
+
+    // Get the first document (you might want to handle multiple documents differently)
+    const document = kycSubmission.KycDocument[0]
+    filePath = document.filePath
+    fileName = document.fileName
+    
+    // Determine content type from mimeType or file extension
+    let contentType: string;
+    if (mimeType) {
+      contentType = mimeType;
     } else {
-      // Fallback to legacy structure
-      const legacySubmission = await prisma.kycSubmission.findUnique({
-        where: { id: params.id },
-        select: {
-          documentFileName: true,
-          documentFilePath: true,
-        },
-      })
-
-      if (!legacySubmission?.documentFilePath) {
-        return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+      // Fallback to file extension detection
+      const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+      
+      switch (fileExtension) {
+        case 'jpg':
+        case 'jpeg':
+          contentType = 'image/jpeg';
+          break;
+        case 'png':
+          contentType = 'image/png';
+          break;
+        case 'pdf':
+          contentType = 'application/pdf';
+          break;
+        default:
+          contentType = 'application/octet-stream';
       }
-
-      filePath = legacySubmission.documentFilePath
-      fileName = legacySubmission.documentFileName
     }
 
     try {
       const fileBuffer = await readFile(filePath)
       
-      // Determine content type
-      let contentType = mimeType || 'application/octet-stream'
-      
-      if (!mimeType) {
-        // Fallback to file extension detection
-        const fileExtension = fileName.split('.').pop()?.toLowerCase()
-        
-        switch (fileExtension) {
-          case 'jpg':
-          case 'jpeg':
-            contentType = 'image/jpeg'
-            break
-          case 'png':
-            contentType = 'image/png'
-            break
-          case 'pdf':
-            contentType = 'application/pdf'
-            break
-        }
-      }
-
       return new NextResponse(fileBuffer, {
         headers: {
           'Content-Type': contentType,

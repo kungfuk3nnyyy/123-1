@@ -76,22 +76,26 @@ export async function checkForDuplicateUser(
   ipAddress?: string,
   userAgent?: string
 ): Promise<DuplicateDetectionResult> {
-  const normalizedEmail = normalizeEmail(email)
-  const normalizedPhone = normalizePhone(phone)
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPhone = phone ? normalizePhone(phone) : null;
 
   // Log the registration attempt
-  await prisma.registrationAttempt.create({
-    data: {
-      email,
-      emailNormalized: normalizedEmail,
-      name: name || null,
-      role: 'UNKNOWN', // Will be updated by caller
-      success: false, // Will be updated if registration succeeds
-      ipAddress,
-      userAgent,
-      duplicateDetected: false, // Will be updated if duplicate found
-    }
-  })
+  try {
+    await prisma.registrationAttempt.create({
+      data: {
+        emailNormalized: normalizedEmail,
+        nameNormalized: name ? name.toLowerCase() : null,
+        phoneNormalized: normalizedPhone,
+        role: UserRole.TALENT, // Default to TALENT role, can be updated by caller
+        success: false, // Will be updated if registration succeeds
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        duplicateDetected: false // Will be updated if duplicate found
+      }
+    });
+  } catch (error) {
+    console.error('Error logging registration attempt:', error);
+  }
 
   // Check for exact email match (case-insensitive)
   const exactEmailMatch = await prisma.user.findFirst({
@@ -255,20 +259,29 @@ export async function logDuplicateDetection(
   ipAddress?: string,
   userAgent?: string
 ) {
-  await prisma.duplicateDetectionLog.create({
-    data: {
-      email,
-      emailNormalized: normalizeEmail(email),
-      detectionType,
-      potentialDuplicateUserId,
-      originalUserId,
-      similarityScore,
-      detectionReason,
-      ipAddress,
-      userAgent,
-      resolved: false
+  try {
+    // Check if the model exists in the Prisma client
+    if ('duplicateDetectionLog' in prisma) {
+      await (prisma as any).duplicateDetectionLog.create({
+        data: {
+          email,
+          emailNormalized: normalizeEmail(email),
+          detectionType,
+          potentialDuplicateUserId,
+          originalUserId,
+          similarityScore,
+          detectionReason,
+          ipAddress,
+          userAgent,
+          resolved: false
+        }
+      });
+    } else {
+      console.warn('duplicateDetectionLog model not found in Prisma schema');
     }
-  })
+  } catch (error) {
+    console.error('Error logging duplicate detection:', error);
+  }
 }
 
 /**
@@ -366,16 +379,29 @@ export async function findExistingDuplicates(): Promise<PotentialDuplicate[]> {
 
   return duplicates
 }
-
 /**
  * Get duplicate detection statistics
  */
 export async function getDuplicateStats() {
+  // Check if the model exists in the Prisma client
+  const hasDuplicateDetectionLog = 'duplicateDetectionLog' in prisma;
+  
+  // If the model doesn't exist, return default values
+  if (!hasDuplicateDetectionLog) {
+    console.warn('duplicateDetectionLog model not found in Prisma schema');
+    return {
+      totalDetections: 0,
+      unresolvedDetections: 0,
+      registrationAttempts: 0,
+      recentDetections: 0
+    };
+  }
+
   const [totalDetections, unresolvedDetections, registrationAttempts, recentDetections] = await Promise.all([
-    prisma.duplicateDetectionLog.count(),
-    prisma.duplicateDetectionLog.count({ where: { resolved: false } }),
+    (prisma as any).duplicateDetectionLog.count(),
+    (prisma as any).duplicateDetectionLog.count({ where: { resolved: false } }),
     prisma.registrationAttempt.count({ where: { duplicateDetected: true } }),
-    prisma.duplicateDetectionLog.count({
+    (prisma as any).duplicateDetectionLog.count({
       where: {
         createdAt: {
           gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days

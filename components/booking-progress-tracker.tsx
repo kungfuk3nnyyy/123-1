@@ -18,6 +18,9 @@ interface BookingProgressTrackerProps {
   status: BookingStatus
   eventDate?: Date | string
   className?: string
+  createdAt?: Date | string | null
+  acceptedDate?: Date | string | null
+  completedDate?: Date | string | null
 }
 
 interface ProgressStep {
@@ -31,7 +34,10 @@ interface ProgressStep {
 export default function BookingProgressTracker({ 
   status, 
   eventDate, 
-  className 
+  className,
+  createdAt,
+  acceptedDate,
+  completedDate
 }: BookingProgressTrackerProps) {
   
   const getProgressSteps = (): ProgressStep[] => {

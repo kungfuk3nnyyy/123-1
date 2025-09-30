@@ -14,9 +14,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const location = searchParams.get('location')
     const categories = searchParams.get('category')?.split(',').filter(Boolean)
-    const minRate = searchParams.get('minRate') ? parseFloat(searchParams.get('minRate')) : undefined
-    const maxRate = searchParams.get('maxRate') ? parseFloat(searchParams.get('maxRate')) : undefined
-    const minRating = searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')) : undefined
+    const minRateParam = searchParams.get('minRate')
+    const maxRateParam = searchParams.get('maxRate')
+    const minRatingParam = searchParams.get('minRating')
+    const minRate = minRateParam ? parseFloat(minRateParam) : undefined
+    const maxRate = maxRateParam ? parseFloat(maxRateParam) : undefined
+    const minRating = minRatingParam ? parseFloat(minRatingParam) : undefined
     const skills = searchParams.get('skills')?.split(',').filter(Boolean) || []
 
     const where: any = {

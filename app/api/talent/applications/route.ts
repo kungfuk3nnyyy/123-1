@@ -43,8 +43,9 @@ export async function POST(request: NextRequest) {
 
     // 3. Calculate amounts
     const grossAmount = event.budget || 0;
-    const platformFee = grossAmount.toNumber() * 0.10; // 10% platform fee
-    const talentAmount = grossAmount.toNumber() - platformFee;
+    const grossAmountNum = typeof grossAmount === 'number' ? grossAmount : Number(grossAmount);
+    const platformFee = grossAmountNum * 0.10; // 10% platform fee
+    const talentAmount = grossAmountNum - platformFee;
 
     // 4. Create the new booking with PENDING status (this is the application)
     const newBooking = await prisma.booking.create({

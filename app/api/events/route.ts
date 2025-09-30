@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Build filter conditions
     const whereClause: any = {
-      status: status || EventStatus.OPEN,
+      status: status || EventStatus.PUBLISHED,
       User: {
         isActive: true,
         role: UserRole.ORGANIZER
@@ -196,8 +196,8 @@ export async function POST(request: NextRequest) {
         budgetMin: budgetMin ? parseFloat(budgetMin) : null,
         budgetMax: budgetMax ? parseFloat(budgetMax) : null,
         requirements: requirements || null,
-        status: EventStatus.OPEN,
-        userId: session.user.id
+        status: EventStatus.PUBLISHED,
+        organizerId: session.user.id
       },
       include: {
         User: {

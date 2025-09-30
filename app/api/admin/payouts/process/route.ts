@@ -245,9 +245,11 @@ export async function POST(request: NextRequest) {
           amount: payoutAmount,
           status: PayoutStatus.PENDING,
           transferCode: transferCode,
-          transferData: transferResponseData,
+          transferData: {
+            ...(transferResponseData || {}),
+            transactionRef: transferReference // Store the transaction reference in transferData
+          },
           mpesaNumber: formattedMpesaNumber,
-          transactionRef: transferReference, // Save the transaction reference
         }
       });
       
@@ -405,7 +407,7 @@ export async function GET(request: NextRequest) {
           mpesaNumber: payout.mpesaNumber,
           processedAt: payout.processedAt?.toISOString() || null,
           createdAt: payout.createdAt.toISOString(),
-          transactionRef: payout.transactionRef, // Include transactionRef
+          transactionRef: (payout.transferData as any)?.transactionRef || null, // Get transactionRef from transferData
           talent: {
             name: payout.User?.name || 'Unknown Talent',
             email: payout.User?.email || ''

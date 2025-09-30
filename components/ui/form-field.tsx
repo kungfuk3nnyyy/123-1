@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface FormFieldProps<TFieldValues extends FieldValues = FieldValues> {
   label?: string;
-  error?: FieldError;
+  error?: FieldError | FieldError[] | { message?: string };
   children: ReactNode;
   required?: boolean;
   className?: string;
@@ -136,7 +136,11 @@ export function FormField<TFieldValues extends FieldValues = FieldValues>({
               d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          {error.message}
+          {Array.isArray(error) 
+            ? error[0]?.message || 'This field is required'
+            : typeof error === 'object' && 'message' in error 
+              ? error.message || 'This field is required'
+              : 'This field is required'}
         </p>
       )}
     </div>
