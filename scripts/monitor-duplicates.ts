@@ -97,7 +97,7 @@ async function checkRecentRegistrations(options: MonitorOptions) {
     if (options.verbose) {
       console.log(message)
       recentAttempts.forEach(attempt => {
-        console.log(`  - ${attempt.emailNormalized} (${attempt.failureReason})`)
+        console.log(`  - ${attempt.emailNormalized} (${attempt.failureReason || 'No reason provided'})`)
       })
     }
 

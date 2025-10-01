@@ -1,87 +1,102 @@
+# Base image with Node.js 20
+FROM node:20-alpine AS base
 
-# Multi-stage build for production optimization
-FROM node:18-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+# Install system dependencies
 RUN apk add --no-cache libc6-compat
+
+# Set working directory
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then \
-    echo "Using Yarn..." && yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
-    echo "Using npm..." && npm ci --legacy-peer-deps; \
-  elif [ -f pnpm-lock.yaml ]; then \
-    echo "Using pnpm..." && yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else \
-    echo "No lockfile found. Generating one with npm..." && \
-    npm install --package-lock-only --legacy-peer-deps && \
-    npm ci --legacy-peer-deps; \
-  fi
+# Update npm to the latest version
+RUN npm install -g npm@11.6.1
 
-# Rebuild the source code only when needed
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Copy package files
+COPY package*.json ./
+COPY pnpm-lock.yaml* ./
+
+# Install dependencies
+FROM base AS deps
+# Step 1: Install dependencies based on lockfile
+RUN if [ -f pnpm-lock.yaml ]; then \
+      echo "Using pnpm..." && pnpm install --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then \
+      echo "Using Yarn..." && yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then \
+      echo "Using npm ci..." && npm ci --legacy-peer-deps; \
+    else \
+      echo "No lockfile found. Using npm install..." && npm install --legacy-peer-deps; \
+    fi
+
+# Step 2: Handle peer dependencies
+RUN npm install --legacy-peer-deps
+
+# Development stage
+FROM base AS development
+WORKDIR /app
+
+# Copy node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+# Copy application code
+COPY . .
+
+# Create .next directory and set permissions
+RUN mkdir -p /app/.next && \
+    chown -R node:node /app && \
+    chmod -R 775 /app
+
+# Switch to non-root user
+USER node
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+# Expose port
+EXPOSE 3000
+
+# Development command
+CMD ["npm", "run", "dev"]
+
+# Production build stage
 FROM base AS builder
 WORKDIR /app
+
+# Copy node_modules and application code
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Create uploads directory and set permissions
-RUN mkdir -p uploads/kyc uploads/profile uploads/epk && \
-    chmod -R 755 uploads
+# Build the Next.js application
+RUN pnpm build
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build the application with production settings
-ENV NODE_ENV production
-RUN npm run build
-
-# Production image, copy all the files and run next
-FROM base AS runner
+# Production stage
+FROM base AS production
 WORKDIR /app
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy necessary files (use Docker-optimized config)
-COPY --from=builder /app/next.config.docker.js ./
+# Copy necessary files from builder stage
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/scripts ./scripts
 
-# Copy the built application
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/.next/server ./.next/server
+# Create .next directory and set permissions
+RUN mkdir -p /app/.next && \
+    chown -R node:node /app && \
+    chmod -R 775 /app
 
-# Create and set permissions for uploads directory
-RUN mkdir -p /app/uploads/kyc /app/uploads/profile /app/uploads/epk && \
-    chown -R nextjs:nodejs /app/uploads && \
-    chmod -R 755 /app/uploads
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Copy Prisma client from builder
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Switch to non-root user
+USER node
 
-USER nextjs
-
+# Expose port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
-
-# Start the application
+# Set the command to run the application
 CMD ["node", "server.js"]
